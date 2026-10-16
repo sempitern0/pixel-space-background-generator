@@ -1,0 +1,55 @@
+[gd_scene load_steps=7 format=3 uid="uid://b66n0eejsls3y"]
+
+[ext_resource type="Script" path="res://addons/pixel_space_background_generator/src/pixel_space_background_generator.gd" id="1"]
+[ext_resource type="Shader" path="res://addons/pixel_space_background_generator/src/shaders/stars.gdshader" id="2"]
+[ext_resource type="Shader" path="res://addons/pixel_space_background_generator/src/shaders/nebulae.gdshader" id="3"]
+[ext_resource type="Resource" path="res://addons/pixel_space_background_generator/src/color_schemes/gradients/nyx8.tres" id="4"]
+
+[sub_resource type="ShaderMaterial" id="Stars"]
+shader = ExtResource("2")
+shader_parameter/size = 10.0
+shader_parameter/OCTAVES = 8
+
+[sub_resource type="ShaderMaterial" id="Nebulae"]
+shader = ExtResource("3")
+shader_parameter/size = 5.0
+shader_parameter/OCTAVES = 3
+
+[node name="PixelSpaceBackgroundGenerator" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+tiled = true
+current_color_scheme = ExtResource("4")
+fixed_amount_of_planets = 2
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="StarsDust" type="ColorRect" parent="."]
+material = SubResource("Stars")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Nebulae" type="ColorRect" parent="."]
+material = SubResource("Nebulae")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="StarsContainer" type="Node2D" parent="."]
+show_behind_parent = true
+
+[node name="PlanetContainer" type="Node2D" parent="."]
+show_behind_parent = true

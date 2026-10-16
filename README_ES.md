@@ -11,9 +11,9 @@ en una escena 2D o exportarlas a PNG. Es una adaptación a Godot del
 ## Primeros pasos
 
 1. Utiliza **Godot 4.7.x**. Las comprobaciones automáticas usan **4.7.2 estable** y el renderizador Compatibility.
-2. Copia `addons/ninetailsrabbit.pixel_space_background_generator/` a la carpeta `addons/` de tu juego, conservando su nombre.
+2. Copia `addons/pixel_space_background_generator/` a la carpeta `addons/` de tu juego, conservando su nombre.
 3. Activa el complemento en **Proyecto → Ajustes del proyecto → Plugins**.
-4. Instancia `addons/ninetailsrabbit.pixel_space_background_generator/src/pixel_space_background_generator.tscn` en una escena con controles. Asigna un tamaño mayor que cero.
+4. Instancia `addons/pixel_space_background_generator/src/pixel_space_background_generator.tscn` en una escena con controles. Asigna un tamaño mayor que cero.
 5. Selecciona su raíz y pulsa **Generate New** en el Inspector. Elige una paleta y activa las capas que necesites.
 
 También puedes abrir este repositorio y pulsar **F5**, o **F6** sobre la escena del
@@ -77,11 +77,7 @@ no es un editor específico de planetas ni un exportador de animaciones.
 
 ## Compatibilidad y pruebas
 
-La versión **1.1.0** está orientada a Godot 4.7. Conserva las rutas del complemento
-y de los recursos. La aleatoriedad ahora es local: una semilla antigua no garantiza
-el mismo resultado que en versiones anteriores. Los botones del Inspector son
-nativos y la escena incluida ya no almacena estrellas y planetas generados como
-contenido permanente.
+La versión **1.1.0** está orientada a Godot 4.7. Instala el complemento en `addons/pixel_space_background_generator/`; sus archivos de entrada son `plugin.cfg` y `plugin.gd`. Al actualizar una instalación existente, sustituye la carpeta anterior, actualiza las referencias a recursos en tus propias escenas y vuelve a activar el complemento. La reproducibilidad de las semillas requiere la misma implementación y ajustes del generador.
 
 ```sh
 python3 scripts/run_tests.py --godot /ruta/a/godot
@@ -98,7 +94,7 @@ Windows, macOS o móviles sin probarlos físicamente.
 ## Créditos y soporte
 
 Generador y algoritmos visuales originales de [Deep-Fold](https://github.com/Deep-Fold).
-Adaptación a Godot publicada originalmente por Ninetailsrabbit y mantenida aquí.
+Adaptación a Godot mantenida por [sempitern0](https://github.com/sempitern0).
 Consulta [LICENSE](LICENSE) y conserva las atribuciones aplicables al redistribuir.
 
 [Comunica un problema](https://github.com/sempitern0/pixel-space-background-generator/issues)

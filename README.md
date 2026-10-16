@@ -11,9 +11,9 @@ Create space backgrounds without painting each variation. Use the result live in
 ## Start in minutes
 
 1. Use **Godot 4.7.x**; automated checks pin **4.7.2 stable**, Compatibility renderer.
-2. Copy `addons/ninetailsrabbit.pixel_space_background_generator/` into your project's `addons/` directory, preserving the folder name.
+2. Copy `addons/pixel_space_background_generator/` into your project's `addons/` directory, preserving the folder name.
 3. Enable the plugin in **Project → Project Settings → Plugins**.
-4. Instantiate `addons/ninetailsrabbit.pixel_space_background_generator/src/pixel_space_background_generator.tscn` inside a Control-based scene. Give it a non-zero size.
+4. Instantiate `addons/pixel_space_background_generator/src/pixel_space_background_generator.tscn` inside a Control-based scene. Give it a non-zero size.
 5. Select its root and use **Generate New** in the Inspector. Choose a color gradient and toggle the layers you need.
 
 Opening this repository and pressing **F6** on the generator scene, or **F5**, also runs the example. Instantiate the supplied scene; the script expects its layer nodes.
@@ -77,10 +77,7 @@ planet editor or animation exporter.
 
 ## Compatibility and validation
 
-Version **1.1.0** targets Godot 4.7. Existing addon paths and resource script paths
-are retained. Seeds now use a local RNG; output from older generator versions is
-not guaranteed to match. Native Inspector buttons replace the old inspector hook.
-The bundled scene no longer stores generated stars and planets as authored content.
+Version **1.1.0** targets Godot 4.7. Install the addon in `addons/pixel_space_background_generator/`; its entry files are `plugin.cfg` and `plugin.gd`. When updating an existing installation, replace the previous addon folder, update any resource references in your own scenes, and enable the plugin again. Seed reproducibility requires the same generator implementation and settings.
 
 ```sh
 python3 scripts/run_tests.py --godot /path/to/godot
@@ -100,5 +97,5 @@ with your Godot version, platform, seed, settings and reproduction steps.
 ## Credits and license
 
 Original generator and visual algorithms by [Deep-Fold](https://github.com/Deep-Fold).
-Godot port originally published by Ninetailsrabbit, maintained in this repository.
+Godot port maintained by [sempitern0](https://github.com/sempitern0).
 See [LICENSE](LICENSE) and preserve applicable attribution when redistributing.

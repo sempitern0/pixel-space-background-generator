@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SCENE = preload("res://addons/ninetailsrabbit.pixel_space_background_generator/src/pixel_space_background_generator.tscn")
+const SCENE = preload("res://addons/pixel_space_background_generator/src/pixel_space_background_generator.tscn")
 
 func _initialize() -> void:
 	call_deferred("run")
