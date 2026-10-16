@@ -1,55 +1,87 @@
-[gd_scene load_steps=7 format=3 uid="uid://b66n0eejsls3y"]
+[gd_scene format=3 uid="uid://b66n0eejsls3y"]
 
-[ext_resource type="Script" path="res://addons/pixel_space_background_generator/src/pixel_space_background_generator.gd" id="1"]
-[ext_resource type="Shader" path="res://addons/pixel_space_background_generator/src/shaders/stars.gdshader" id="2"]
-[ext_resource type="Shader" path="res://addons/pixel_space_background_generator/src/shaders/nebulae.gdshader" id="3"]
-[ext_resource type="Resource" path="res://addons/pixel_space_background_generator/src/color_schemes/gradients/nyx8.tres" id="4"]
+[ext_resource type="Script" uid="uid://da5ovavpnj7qg" path="res://addons/pixel_space_background_generator/src/pixel_space_background_generator.gd" id="1"]
+[ext_resource type="Shader" uid="uid://dxjg3ty8v6u4m" path="res://addons/pixel_space_background_generator/src/shaders/stars.gdshader" id="2"]
+[ext_resource type="Shader" uid="uid://cu0obiw1ps122" path="res://addons/pixel_space_background_generator/src/shaders/nebulae.gdshader" id="3"]
 
-[sub_resource type="ShaderMaterial" id="Stars"]
+[sub_resource type="Gradient" id="Gradient_ejxgq"]
+offsets = PackedFloat32Array(0, 0, 0.143, 0.286, 0.429, 0.571, 0.714, 0.857, 1)
+colors = PackedColorArray(0.12549, 0.133333, 0.0823529, 1, 0.588235, 0.235294, 0.235294, 1, 0.792157, 0.352941, 0.180392, 1, 1, 0.470588, 0.192157, 1, 0.952941, 0.6, 0.286275, 1, 0.921569, 0.760784, 0.458824, 1, 0.87451, 0.843137, 0.521569, 1, 0.227451, 0.156863, 0.00784314, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_4g7p5"]
+gradient = SubResource("Gradient_ejxgq")
+width = 2048
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_f5meu"]
 shader = ExtResource("2")
 shader_parameter/size = 10.0
 shader_parameter/OCTAVES = 8
+shader_parameter/seed = 4.4549646
+shader_parameter/pixels = 1280.0
+shader_parameter/should_tile = true
+shader_parameter/reduce_background = true
+shader_parameter/colorscheme = SubResource("GradientTexture1D_4g7p5")
+shader_parameter/uv_correct = Vector2(1.7777778, 1)
 
-[sub_resource type="ShaderMaterial" id="Nebulae"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3lgna"]
 shader = ExtResource("3")
 shader_parameter/size = 5.0
 shader_parameter/OCTAVES = 3
+shader_parameter/seed = 5.3013725
+shader_parameter/pixels = 1280.0
+shader_parameter/colorscheme = SubResource("GradientTexture1D_4g7p5")
+shader_parameter/background_color = Color(0, 0, 0, 1)
+shader_parameter/should_tile = true
+shader_parameter/reduce_background = true
+shader_parameter/uv_correct = Vector2(1.7777778, 1)
 
-[node name="PixelSpaceBackgroundGenerator" type="Control"]
+[node name="PixelSpaceBackgroundGenerator" type="Control" unique_id=903584026]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1")
 tiled = true
-current_color_scheme = ExtResource("4")
+reduce_background = true
+show_stars_behind = false
+show_planets_behind = false
+auto_based_on_viewport_size = false
 fixed_amount_of_planets = 2
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=488345355]
 z_index = -1
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.09019608, 0.09019608, 0.06666667, 1)
 
-[node name="StarsDust" type="ColorRect" parent="."]
-material = SubResource("Stars")
+[node name="StarsDust" type="ColorRect" parent="." unique_id=344994463]
+material = SubResource("ShaderMaterial_f5meu")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Nebulae" type="ColorRect" parent="."]
-material = SubResource("Nebulae")
+[node name="Nebulae" type="ColorRect" parent="." unique_id=1729747034]
+material = SubResource("ShaderMaterial_3lgna")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="StarsContainer" type="Node2D" parent="."]
-show_behind_parent = true
+[node name="StarsContainer" type="Node2D" parent="." unique_id=146007325]
 
-[node name="PlanetContainer" type="Node2D" parent="."]
-show_behind_parent = true
+[node name="PlanetContainer" type="Node2D" parent="." unique_id=161396194]
