@@ -52,6 +52,21 @@ func run() -> void:
 	g.manual_seed = g.last_seed
 	g.generate_new()
 	assert(snapshot(g) == random_result, "last_seed must reproduce a random result")
+	# New composition modes must replay deterministically and obey separation.
+	g.star_cluster_strength = 0.85
+	g.planet_spacing = 42.0
+	g.fixed_amount_of_planets = 5
+	g.manual_seed = 42
+	g.generate_new()
+	var composed: Array = snapshot(g)
+	g.generate_new()
+	assert(snapshot(g) == composed)
+	for i in g.planet_objects.size():
+		for j in range(i + 1, g.planet_objects.size()):
+			assert(g.planet_objects[i].position.distance_to(g.planet_objects[j].position) >= g.planet_spacing)
+	g.planet_spacing = 0.0
+	g.star_cluster_strength = 0.0
+	g.fixed_amount_of_planets = 0
 	g.min_amount_of_planets = 3
 	g.max_amount_of_planets = 1
 	g.generate_new()

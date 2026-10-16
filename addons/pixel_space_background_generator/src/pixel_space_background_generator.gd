@@ -9,6 +9,11 @@ const DefaultBackgroundColor: Color = Color("171711")
 @export_tool_button("Generate New", "Reload") var generate_button: Callable = generate_new
 @export var randomize_seed: bool = true
 @export var manual_seed: int = 0
+@export_category("Composition")
+## 0 preserves uniform star positions. Higher values bias stars toward organic clusters.
+@export_range(0.0, 1.0, 0.05) var star_cluster_strength: float = 0.0
+## Minimum separation in pixels between planet centers (0 keeps the old behavior).
+@export_range(0.0, 256.0, 1.0) var planet_spacing: float = 0.0
 var last_seed: int = 0
 var rng := RandomNumberGenerator.new()
 var _prepared: bool = false
@@ -228,6 +233,16 @@ func _create_star() -> void:
 		place_position = Vector2(int(rng.randf_range(clampf(tile_offset, 0.0, size.x * 0.5), size.x - clampf(tile_offset, 0.0, size.x * 0.5))), int(rng.randf_range(clampf(tile_offset, 0.0, size.y * 0.5), size.y - clampf(tile_offset, 0.0, size.y * 0.5))))
 	else:
 		place_position = Vector2(int(rng.randf_range(0, size.x)), int(rng.randf_range(0, size.y)))
+	if star_cluster_strength > 0.0:
+		# Rejection sampling: bounded attempts and deterministic with a fixed seed.
+		# A wide low-frequency wave yields regions of low and high stellar density.
+		var candidate: Vector2 = place_position
+		for attempt in 12:
+			var field: float = (sin(candidate.x * 0.021 + float(last_seed % 1000) * 0.017) * cos(candidate.y * 0.028 - float(last_seed % 997) * 0.013) + 1.0) * 0.5
+			if rng.randf() <= lerpf(1.0, 0.12 + 0.88 * field, star_cluster_strength):
+				break
+			candidate = Vector2(rng.randf_range(0.0, maxf(0.0, size.x)), rng.randf_range(0.0, maxf(0.0, size.y)))
+		place_position = Vector2(int(candidate.x), int(candidate.y))
 
 	
 	var background_star = BackgroundStarScene.instantiate()
@@ -286,6 +301,19 @@ func _create_planet() -> void:
 	else:
 		place_position = Vector2(int(rng.randf_range(0, size.x)), int(rng.randf_range(0, size.y)))
 	
+	if planet_spacing > 0.0:
+		var accepted: bool = false
+		for attempt in 24:
+			accepted = true
+			for existing in planet_objects:
+				if existing.position.distance_to(place_position) < planet_spacing:
+					accepted = false
+					break
+			if accepted:
+				break
+			place_position = Vector2(int(rng.randf_range(0.0, maxf(0.0, size.x))), int(rng.randf_range(0.0, maxf(0.0, size.y))))
+		if not accepted:
+			return
 	var planet = BackgroundPlanetScene.instantiate()
 	
 	planet.scale = planet_scale

@@ -77,7 +77,7 @@ no es un editor específico de planetas ni un exportador de animaciones.
 
 ## Compatibilidad y pruebas
 
-La versión **1.1.0** está orientada a Godot 4.7. Instala el complemento en `addons/pixel_space_background_generator/`; sus archivos de entrada son `plugin.cfg` y `plugin.gd`. Al actualizar una instalación existente, sustituye la carpeta anterior, actualiza las referencias a recursos en tus propias escenas y vuelve a activar el complemento. La reproducibilidad de las semillas requiere la misma implementación y ajustes del generador.
+La versión **1.2.0** está orientada a Godot 4.7. Instala el complemento en `addons/pixel_space_background_generator/`; sus archivos de entrada son `plugin.cfg` y `plugin.gd`. Al actualizar una instalación existente, sustituye la carpeta anterior, actualiza las referencias a recursos en tus propias escenas y vuelve a activar el complemento. La reproducibilidad de las semillas requiere la misma implementación y ajustes del generador.
 
 ```sh
 python3 scripts/run_tests.py --godot /ruta/a/godot
@@ -99,3 +99,12 @@ Consulta [LICENSE](LICENSE) y conserva las atribuciones aplicables al redistribu
 
 [Comunica un problema](https://github.com/sempitern0/pixel-space-background-generator/issues)
 con versión de Godot, plataforma, semilla, ajustes y pasos de reproducción.
+
+## Composición orgánica opcional
+
+- **Star Cluster Strength** (0–1): concentra las estrellas en zonas de densidad variable; 0 mantiene el reparto uniforme original.
+- **Planet Spacing** (píxeles): distancia mínima entre centros de planetas; puede producir menos planetas cuando no cabe la cantidad solicitada. Con 0 se mantiene el comportamiento anterior.
+
+Ambos controles son reproducibles con una semilla fija. Se aplican a las posiciones sin modificar los shaders originales.
+
+Pulsa **F5** para abrir el laboratorio interactivo con tres composiciones, semillas editables y exportación PNG. **F6** en la escena original conserva la demostración básica.

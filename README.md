@@ -16,7 +16,7 @@ Create space backgrounds without painting each variation. Use the result live in
 4. Instantiate `addons/pixel_space_background_generator/src/pixel_space_background_generator.tscn` inside a Control-based scene. Give it a non-zero size.
 5. Select its root and use **Generate New** in the Inspector. Choose a color gradient and toggle the layers you need.
 
-Opening this repository and pressing **F6** on the generator scene, or **F5**, also runs the example. Instantiate the supplied scene; the script expects its layer nodes.
+Press **F5** for a three-preset interactive composition laboratory with seed replay and isolated PNG export; **F6** on the generator scene still shows the raw plugin example. Instantiate the supplied scene; the script expects its layer nodes.
 
 ## Choose a result you can reproduce
 
@@ -45,6 +45,8 @@ func _ready() -> void:
 | Display Stars / Stars Dust / Planets / Nebulaes | Independent layer switches |
 | Show Stars / Planets Behind | Places those objects behind the dust and nebula layers |
 | Tiled / Tile Offset | Shader tiling and object edge placement; does not guarantee seamless composite edges for every setting |
+| Star Cluster Strength | Biases positions into broad uneven density regions; 0 retains uniform sampling |
+| Planet Spacing | Minimum separation between planet centers; may reduce count in crowded scenes |
 
 Parameters and resizing regenerate a preview after the current frame. For exact
 control from code, set several properties then call `generate_new()`. Generated
@@ -77,7 +79,7 @@ planet editor or animation exporter.
 
 ## Compatibility and validation
 
-Version **1.1.0** targets Godot 4.7. Install the addon in `addons/pixel_space_background_generator/`; its entry files are `plugin.cfg` and `plugin.gd`. When updating an existing installation, replace the previous addon folder, update any resource references in your own scenes, and enable the plugin again. Seed reproducibility requires the same generator implementation and settings.
+Version **1.2.0** targets Godot 4.7. Install the addon in `addons/pixel_space_background_generator/`; its entry files are `plugin.cfg` and `plugin.gd`. When updating an existing installation, replace the previous addon folder, update any resource references in your own scenes, and enable the plugin again. Seed reproducibility requires the same generator implementation and settings.
 
 ```sh
 python3 scripts/run_tests.py --godot /path/to/godot
@@ -85,7 +87,7 @@ python3 scripts/run_tests.py --godot /path/to/godot
 python3 scripts/run_tests.py --godot /path/to/godot --render
 ```
 
-Checks cover import, script compilation, deterministic generation, instance isolation,
+Checks cover composition modes and repeatability, import, script compilation, deterministic generation, instance isolation,
 counts, resizing, toggles and PNG export with a real OpenGL renderer. Fixed-seed
 composition is reproducible within this implementation; identical shader pixels
 across GPU drivers are not guaranteed. Windows, macOS and mobile hardware still
