@@ -2,38 +2,41 @@
 
 [ext_resource type="Script" uid="uid://da5ovavpnj7qg" path="res://addons/pixel_space_background_generator/src/pixel_space_background_generator.gd" id="1"]
 [ext_resource type="Shader" uid="uid://dxjg3ty8v6u4m" path="res://addons/pixel_space_background_generator/src/shaders/stars.gdshader" id="2"]
+[ext_resource type="Resource" uid="uid://crdtfarlju6do" path="res://addons/pixel_space_background_generator/src/color_schemes/gradients/coffee.tres" id="2_3lgna"]
 [ext_resource type="Shader" uid="uid://cu0obiw1ps122" path="res://addons/pixel_space_background_generator/src/shaders/nebulae.gdshader" id="3"]
 
-[sub_resource type="Gradient" id="Gradient_ejxgq"]
+[sub_resource type="Gradient" id="Gradient_ckk8g"]
 offsets = PackedFloat32Array(0, 0, 0.143, 0.286, 0.429, 0.571, 0.714, 0.857, 1)
-colors = PackedColorArray(0.12549, 0.133333, 0.0823529, 1, 0.588235, 0.235294, 0.235294, 1, 0.792157, 0.352941, 0.180392, 1, 1, 0.470588, 0.192157, 1, 0.952941, 0.6, 0.286275, 1, 0.921569, 0.760784, 0.458824, 1, 0.87451, 0.843137, 0.521569, 1, 0.227451, 0.156863, 0.00784314, 1, 0, 0, 0, 1)
+colors = PackedColorArray(0, 0, 0, 1, 0.0392157, 0.0392157, 0.0392157, 1, 0.0980392, 0.0980392, 0.0980392, 1, 0.32549, 0.243137, 0.176471, 1, 0.635294, 0.439216, 0.207843, 1, 0.721569, 0.545098, 0.290196, 1, 0.866667, 0.792157, 0.490196, 1, 0.984314, 0.976471, 0.937255, 1, 0, 0, 0, 1)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_4g7p5"]
-gradient = SubResource("Gradient_ejxgq")
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_gbm30"]
+gradient = SubResource("Gradient_ckk8g")
 width = 2048
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_f5meu"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jlk5f"]
 shader = ExtResource("2")
 shader_parameter/size = 10.0
 shader_parameter/OCTAVES = 8
-shader_parameter/seed = 4.4549646
+shader_parameter/seed = 6.081733
 shader_parameter/pixels = 1280.0
-shader_parameter/should_tile = true
-shader_parameter/reduce_background = true
-shader_parameter/colorscheme = SubResource("GradientTexture1D_4g7p5")
+shader_parameter/should_tile = false
+shader_parameter/reduce_background = false
+shader_parameter/colorscheme = SubResource("GradientTexture1D_gbm30")
 shader_parameter/uv_correct = Vector2(1.7777778, 1)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_3lgna"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3wp8h"]
 shader = ExtResource("3")
 shader_parameter/size = 5.0
 shader_parameter/OCTAVES = 3
-shader_parameter/seed = 5.3013725
+shader_parameter/seed = 3.9102929
 shader_parameter/pixels = 1280.0
-shader_parameter/colorscheme = SubResource("GradientTexture1D_4g7p5")
+shader_parameter/colorscheme = SubResource("GradientTexture1D_gbm30")
 shader_parameter/background_color = Color(0, 0, 0, 1)
-shader_parameter/should_tile = true
-shader_parameter/reduce_background = true
+shader_parameter/should_tile = false
+shader_parameter/reduce_background = false
 shader_parameter/uv_correct = Vector2(1.7777778, 1)
+shader_parameter/filament_strength = 0.0
+shader_parameter/cloud_coverage = 0.5
 
 [node name="PixelSpaceBackgroundGenerator" type="Control" unique_id=903584026]
 layout_mode = 3
@@ -44,10 +47,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
-tiled = true
-reduce_background = true
-show_stars_behind = false
-show_planets_behind = false
+planet_spacing = 2.0
+background_color = Color(0.2784314, 0.19215687, 0.13333334, 1)
+current_color_scheme = ExtResource("2_3lgna")
 auto_based_on_viewport_size = false
 fixed_amount_of_planets = 2
 
@@ -60,10 +62,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.09019608, 0.09019608, 0.06666667, 1)
+color = Color(0.2784314, 0.19215687, 0.13333334, 1)
 
 [node name="StarsDust" type="ColorRect" parent="." unique_id=344994463]
-material = SubResource("ShaderMaterial_f5meu")
+material = SubResource("ShaderMaterial_jlk5f")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -73,7 +75,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Nebulae" type="ColorRect" parent="." unique_id=1729747034]
-material = SubResource("ShaderMaterial_3lgna")
+material = SubResource("ShaderMaterial_3wp8h")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -83,5 +85,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="StarsContainer" type="Node2D" parent="." unique_id=146007325]
+show_behind_parent = true
 
 [node name="PlanetContainer" type="Node2D" parent="." unique_id=161396194]
+show_behind_parent = true
