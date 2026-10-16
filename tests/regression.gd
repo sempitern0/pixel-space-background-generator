@@ -61,6 +61,18 @@ func run() -> void:
 	var composed: Array = snapshot(g)
 	g.generate_new()
 	assert(snapshot(g) == composed)
+	# Surface identity, nebula structure and replay are all captured in material state.
+	g.planet_surface = 2
+	g.nebula_filaments = 0.8
+	g.nebula_coverage = 0.7
+	g.generate_new()
+	assert(g.nebulae.material.get_shader_parameter("filament_strength") == 0.8)
+	assert(g.nebulae.material.get_shader_parameter("cloud_coverage") == 0.7)
+	for planet in g.planet_objects:
+		assert(planet.material.get_shader_parameter("surface_type") == 2)
+	var astronomy_snapshot: Array = snapshot(g)
+	g.generate_new()
+	assert(snapshot(g) == astronomy_snapshot)
 	for i in g.planet_objects.size():
 		for j in range(i + 1, g.planet_objects.size()):
 			assert(g.planet_objects[i].position.distance_to(g.planet_objects[j].position) >= g.planet_spacing)

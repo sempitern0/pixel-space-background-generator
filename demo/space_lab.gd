@@ -2,9 +2,9 @@ extends Control
 
 const BACKGROUND_SCENE: PackedScene = preload("res://addons/pixel_space_background_generator/src/pixel_space_background_generator.tscn")
 const PRESETS: Array[Dictionary] = [
-	{"name": "Quiet orbit", "seed": 42, "stars": 50, "planets": 2, "clusters": 0.0, "distance": 0.0},
-	{"name": "Dense starfield", "seed": 117, "stars": 130, "planets": 2, "clusters": 0.9, "distance": 96.0},
-	{"name": "Distant systems", "seed": 902, "stars": 70, "planets": 4, "clusters": 0.65, "distance": 120.0}
+	{"name": "Quiet orbit", "seed": 42, "stars": 50, "planets": 2, "clusters": 0.0, "distance": 0.0, "surface": 0, "filaments": 0.0, "coverage": 0.5},
+	{"name": "Dense starfield", "seed": 117, "stars": 130, "planets": 2, "clusters": 0.9, "distance": 96.0, "surface": 2, "filaments": 0.85, "coverage": 0.7},
+	{"name": "Distant systems", "seed": 902, "stars": 70, "planets": 4, "clusters": 0.65, "distance": 120.0, "surface": 3, "filaments": 0.35, "coverage": 0.35}
 ]
 var generator: PixelSpaceBackgroundGenerator
 var picker: OptionButton
@@ -61,6 +61,9 @@ func _generate() -> void:
 	generator.fixed_amount_of_planets = int(preset["planets"])
 	generator.star_cluster_strength = float(preset["clusters"])
 	generator.planet_spacing = float(preset["distance"])
+	generator.planet_surface = int(preset["surface"])
+	generator.nebula_filaments = float(preset["filaments"])
+	generator.nebula_coverage = float(preset["coverage"])
 	generator.generate_new()
 	status.text = "Seed %d · Stars %d · Planets %d" % [generator.manual_seed, generator.star_objects.size(), generator.planet_objects.size()]
 

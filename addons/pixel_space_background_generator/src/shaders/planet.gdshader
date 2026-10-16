@@ -7,6 +7,8 @@ uniform float seed: hint_range(1, 10);
 uniform float pixels = 100.0;
 uniform sampler2D colorscheme;
 uniform vec2 light_origin;
+uniform int surface_type = 0;
+uniform float surface_detail : hint_range(0.0, 1.0) = 0.65;
 
 
 float rand(vec2 coord) {
@@ -103,6 +105,22 @@ void fragment() {
 	float n = fbm(uv * size);
 	float n2 = fbm(uv * size + n*3.0);
 	float mixed = n2 * d_to_light;
+	if (surface_type == 1) {
+		// Crust and highland breakup: two noise scales and coarse crater contrast.
+		float crust = fbm(uv * size * 2.4 + vec2(seed * 0.17));
+		float highlands = smoothstep(0.39, 0.61, crust);
+		mixed = mix(mixed, (0.30 + highlands * 0.48 + n * 0.22) * d_to_light, surface_detail);
+	} else if (surface_type == 2) {
+		// Broad latitudinal cloud bands warped by low-frequency flow.
+		float latitude = uv.y + (n - 0.5) * 0.19 * surface_detail;
+		float bands = sin(latitude * (19.0 + seed * 0.7)) * 0.5 + 0.5;
+		mixed = mix(mixed, (0.24 + bands * 0.62 + n2 * 0.14) * d_to_light, surface_detail);
+	} else if (surface_type == 3) {
+		// Ice fields: smooth snowcaps above darker fissures.
+		float cracks = 1.0 - smoothstep(0.045, 0.15, abs(n - 0.48));
+		float polar = smoothstep(0.19, 0.50, abs(uv.y - 0.5));
+		mixed = mix(mixed, (0.70 + polar * 0.25 - cracks * 0.38) * d_to_light, surface_detail);
+	}
 	
 	// optionally create some contrast with this
 //	mixed = pow(mixed, 1.0);

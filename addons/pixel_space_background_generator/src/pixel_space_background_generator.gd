@@ -112,7 +112,13 @@ var _update_pending: bool = false
 		if value != max_amount_of_planets:
 			max_amount_of_planets = value
 			_update()
+@export_category("Planet surfaces")
+## 0 preserves the legacy planet shader behavior.
+@export_enum("Classic", "Rocky", "Gas giant", "Ice") var planet_surface: int = 0
+@export_range(0.0, 1.0, 0.05) var planet_surface_detail: float = 0.65
 @export_category("Nebulae")
+@export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0
+@export_range(0.0, 1.0, 0.05) var nebula_coverage: float = 0.5
 @export var display_nebulaes: bool = true:
 	set(value):
 		if value != display_nebulaes:
@@ -271,6 +277,8 @@ func _create_nebulae() -> void:
 	nebulae.material.set_shader_parameter("should_tile", tiled)
 	nebulae.material.set_shader_parameter("reduce_background", reduce_background)
 	nebulae.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
+	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
 	
 #endregion
 
@@ -320,6 +328,8 @@ func _create_planet() -> void:
 	planet.position = place_position
 	planet.configure(rng)
 	planet.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+	planet.material.set_shader_parameter("surface_type", clampi(planet_surface, 0, 3))
+	planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
 	planet_container.add_child(planet)
 	planet_objects.append(planet)
 	

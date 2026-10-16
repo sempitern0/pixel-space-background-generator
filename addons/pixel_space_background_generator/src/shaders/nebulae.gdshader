@@ -10,6 +10,8 @@ uniform vec4 background_color : source_color;
 uniform bool should_tile = false;
 uniform bool reduce_background = false;
 uniform vec2 uv_correct = vec2(1.0);
+uniform float filament_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.5;
 
 float rand(vec2 coord, float tilesize) {
 	if (should_tile) {
@@ -99,6 +101,13 @@ void fragment() {
 	float n_lerp = n2 * n;
 	float n_dust = cloud_alpha(uv * size, size);
 	float n_dust_lerp = n_dust * n_lerp;
+	if (filament_strength > 0.0) {
+		// Domain-warped filaments mix with the original soft cloud field.
+		float turbulence = fbm(uv * size * 2.0 + vec2(4.1, 9.3), size * 2.0);
+		float warped = fbm(uv * size * 1.6 + vec2(turbulence * 6.0), size * 1.6);
+		float filaments = 1.0 - smoothstep(0.04, 0.22, abs(warped - 0.53));
+		n_dust_lerp = mix(n_dust_lerp, n_dust_lerp * (0.45 + filaments * 1.35), filament_strength);
+	}
 
 	// apply dithering
 	if (dith) {
@@ -132,5 +141,7 @@ void fragment() {
 		col = background_color.rgb;
 	}
 
-	COLOR = vec4(col, a2);
+	// Keep the historical alpha mask at 0.5 coverage, retaining old seeds.
+	float threshold_shift = (0.5 - cloud_coverage) * 0.26;
+	COLOR = vec4(col, step(n2, (should_tile ? 0.315 : 0.115 + d) - threshold_shift));
 }

@@ -77,7 +77,7 @@ no es un editor específico de planetas ni un exportador de animaciones.
 
 ## Compatibilidad y pruebas
 
-La versión **1.2.0** está orientada a Godot 4.7. Instala el complemento en `addons/pixel_space_background_generator/`; sus archivos de entrada son `plugin.cfg` y `plugin.gd`. Al actualizar una instalación existente, sustituye la carpeta anterior, actualiza las referencias a recursos en tus propias escenas y vuelve a activar el complemento. La reproducibilidad de las semillas requiere la misma implementación y ajustes del generador.
+La versión **1.3.0** está orientada a Godot 4.7. Instala el complemento en `addons/pixel_space_background_generator/`; sus archivos de entrada son `plugin.cfg` y `plugin.gd`. Al actualizar una instalación existente, sustituye la carpeta anterior, actualiza las referencias a recursos en tus propias escenas y vuelve a activar el complemento. La reproducibilidad de las semillas requiere la misma implementación y ajustes del generador.
 
 ```sh
 python3 scripts/run_tests.py --godot /ruta/a/godot
@@ -108,3 +108,26 @@ con versión de Godot, plataforma, semilla, ajustes y pasos de reproducción.
 Ambos controles son reproducibles con una semilla fija. Se aplican a las posiciones sin modificar los shaders originales.
 
 Pulsa **F5** para abrir el laboratorio interactivo con tres composiciones, semillas editables y exportación PNG. **F6** en la escena original conserva la demostración básica.
+
+## Composición astronómica
+
+**Planet Surface** permite elegir Classic, Rocky, Gas giant o Ice. **Planet Surface Detail** regula cuánto influye la textura procedural en la paleta y la iluminación existentes. Las superficies rocosas varían la corteza; los gigantes gaseosos forman bandas onduladas y los planetas helados añaden casquetes claros y fisuras. No se simula física astronómica.
+
+**Nebula Filaments** combina filamentos con el ruido original, mientras **Nebula Coverage** regula la cobertura de las nubes. Con filamentos a 0 y cobertura a 0.5 se conserva el aspecto clásico.
+
+```gdscript
+fondo.randomize_seed = false
+fondo.manual_seed = 4242
+fondo.planet_surface = 2 # Gigante gaseoso
+fondo.planet_surface_detail = 0.8
+fondo.nebula_filaments = 0.75
+fondo.nebula_coverage = 0.6
+fondo.star_cluster_strength = 0.8
+fondo.planet_spacing = 96.0
+fondo.generate_new()
+var error := await fondo.export_png("user://gigante_gaseoso.png")
+```
+
+Pulsa **F5** para comparar órbita tranquila, un campo estelar denso con gigantes gaseosos y sistemas lejanos con planetas helados. La exportación PNG conserva solamente el fondo generado. La escena original también funciona con **F6**.
+
+Son shaders 2D artísticos, no órbitas físicas ni planetas 3D. Todos los planetas de una instancia comparten estilo; para combinar familias usa varias escenas generadoras. Verifica los bordes del PNG si necesitas repetición perfectamente continua, ya que el modo tiled anterior no garantiza continuidad de todos los elementos.
