@@ -1,57 +1,104 @@
-<div align="center">
-	<img src="icon.svg" alt="Logo" width="160" height="160">
+<p align="center"><img src="icon.svg" width="112" alt="Pixel space background generator"></p>
+<h1 align="center">Pixel Space Background Generator</h1>
+<p align="center">Procedural stars, planets and nebulae for Godot 4.7.</p>
 
-<h3 align="center">Pixel space background generator</h3>
+**English** · [Español](README_ES.md) · [Validation](https://github.com/sempitern0/pixel-space-background-generator/actions)
 
-  <p align="center">
-   Port to Godot 4 for the pixel space background generator by deep-fold
-	<br />
-	·
-	<a href="https://github.com/ninetailsrabbit/pixel-space-background-generator/issues/new?assignees=ninetailsrabbit&labels=%F0%9F%90%9B+bug&projects=&template=bug_report.md&title=">Report Bug</a>
-	·
-	<a href="https://github.com/ninetailsrabbit/pixel-space-background-generator/issues/new?assignees=ninetailsrabbit&labels=%E2%AD%90+feature&projects=&template=feature_request.md&title=">Request Features</a>
-  </p>
-</div>
+Create space backgrounds without painting each variation. Use the result live in a
+2D scene or export a standalone PNG. This is a Godot port of
+[Deep-Fold's space background generator](https://deep-fold.itch.io/space-background-generator).
 
-<br>
-<br>
+## Start in minutes
 
-- [📦 Installation](#-installation)
-- [Getting started 🚀](#getting-started-)
-  - [Features 👾](#features-)
-- [How to use 🪛](#how-to-use-)
-  - [Export background image 🖼️](#export-background-image-️)
+1. Use **Godot 4.7.x**; automated checks pin **4.7.2 stable**, Compatibility renderer.
+2. Copy `addons/ninetailsrabbit.pixel_space_background_generator/` into your project's `addons/` directory, preserving the folder name.
+3. Enable the plugin in **Project → Project Settings → Plugins**.
+4. Instantiate `addons/ninetailsrabbit.pixel_space_background_generator/src/pixel_space_background_generator.tscn` inside a Control-based scene. Give it a non-zero size.
+5. Select its root and use **Generate New** in the Inspector. Choose a color gradient and toggle the layers you need.
 
-# 📦 Installation
+Opening this repository and pressing **F6** on the generator scene, or **F5**, also runs the example. Instantiate the supplied scene; the script expects its layer nodes.
 
-1. [Download Latest Release](https://github.com/ninetailsrabbit/pixel-space-background-generator/releases/latest)
-2. Unpack the `addons/pixel_space_background_generator` folder into your `/addons` folder within the Godot project
-3. Enable this addon within the Godot settings: `Project > Project Settings > Plugins`
+## Choose a result you can reproduce
 
-To better understand what branch to choose from for which Godot version, please refer to this table:
-|Godot Version|pixel-space-background-generator Branch|pixel-space-background-generator Version|
-|---|---|--|
-|[![GodotEngine](https://img.shields.io/badge/Godot_4.3.x_stable-blue?logo=godotengine&logoColor=white)](https://godotengine.org/)|`4.3`|`1.x`|
-|[![GodotEngine](https://img.shields.io/badge/Godot_4.4.x_stable-blue?logo=godotengine&logoColor=white)](https://godotengine.org/)|`main`|`1.x`|
+Disable **Randomize Seed** and set **Manual Seed** for repeatable composition.
+When generating randomly, `last_seed` records the seed of the current result.
+Store it along with your settings and palette to reproduce that background.
 
-# Getting started 🚀
+```gdscript
+@onready var background: PixelSpaceBackgroundGenerator = $PixelSpaceBackgroundGenerator
 
-This project brings the [Pixel space background generator](https://deep-fold.itch.io/space-background-generator) created by the user [Deep-Fold](https://github.com/Deep-Fold) to the Godot 4 version.
+func _ready() -> void:
+    background.randomize_seed = false
+    background.manual_seed = 42
+    background.auto_based_on_viewport_size = false
+    background.fixed_amount_of_stars = 24
+    background.fixed_amount_of_planets = 3
+    background.generate_new()
+```
 
-## Features 👾
+| Setting | Effect |
+| --- | --- |
+| Auto Based on Viewport Size | Chooses a star count from the available area |
+| Fixed Amount | Positive values select an exact count; zero uses the configured range/automatic mode |
+| Min / Max Amount | Inclusive count range; reversed or negative limits are normalized |
+| Current Color Scheme | A `ColorGradient` resource with a `GradientTexture1D` |
+| Display Stars / Stars Dust / Planets / Nebulaes | Independent layer switches |
+| Show Stars / Planets Behind | Places those objects behind the dust and nebula layers |
+| Tiled / Tile Offset | Shader tiling and object edge placement; does not guarantee seamless composite edges for every setting |
 
-- **Create backgrounds directly in your scene:** Generate unique pixel art space backgrounds at runtime using a dedicated node in your Godot scene tree.
-- **Customize with ease:** Exportable parameters allow you to fine-tune the space background generation process, tailoring them to your specific needs.
-- **Export to image:**: Export your generated background as `.png` to reuse as texture in your projects.
+Parameters and resizing regenerate a preview after the current frame. For exact
+control from code, set several properties then call `generate_new()`. Generated
+children are transient; keep authored content outside `StarsContainer` and
+`PlanetContainer`. Separate generator instances do not share writable materials.
 
-# How to use 🪛
+## Export only the background
 
-Open the scene `pixelspace_background_generator.tscn` provided by the plugin and modify the parameters to achieve the desired background.
+The Inspector's **Export Background** button creates the selected export directory
+and writes a uniquely named PNG. It captures an isolated rendering viewport,
+so editor panels, zoom and game UI are excluded. The current visual result is copied;
+export does not reroll the seed.
 
-This scene also works on runtime and you can change the parameters to create backgrounds dinamically in your game.
+```gdscript
+# Runtime: user:// is writable in exported games.
+var error := await background.export_png("user://background.png")
+if error != OK:
+    push_warning(error_string(error))
+```
 
-## Export background image 🖼️
+`export_png()` requires an existing parent directory and a live renderer. It returns
+`ERR_UNAVAILABLE` under `--headless`, rather than waiting indefinitely. PNG size is
+the generator's integer size, between 1 and 4096 pixels per dimension. Use the
+Inspector's `res://space_backgrounds` default for authoring, and `user://` at runtime.
 
-By default the images are exported into `res://space_backgrounds`. Feel free to change the exported variable `export path` to change the output directory
+For an isolated planet PNG, create a small generator scene, disable dust, stars and
+nebulae, set one planet, and use a transparent background color. Planet placement
+and scale still follow the background generator's rules; this is not a dedicated
+planet editor or animation exporter.
 
-The Image export currently **only works in-game**. If you export from the editor it will use the preview window with the zoom level and grey areas will appear.
+## Compatibility and validation
+
+Version **1.1.0** targets Godot 4.7. Existing addon paths and resource script paths
+are retained. Seeds now use a local RNG; output from older generator versions is
+not guaranteed to match. Native Inspector buttons replace the old inspector hook.
+The bundled scene no longer stores generated stars and planets as authored content.
+
+```sh
+python3 scripts/run_tests.py --godot /path/to/godot
+# With a desktop display (Linux CI uses xvfb-run):
+python3 scripts/run_tests.py --godot /path/to/godot --render
+```
+
+Checks cover import, script compilation, deterministic generation, instance isolation,
+counts, resizing, toggles and PNG export with a real OpenGL renderer. Fixed-seed
+composition is reproducible within this implementation; identical shader pixels
+across GPU drivers are not guaranteed. Windows, macOS and mobile hardware still
+need testing on the intended device.
+
+[Report an issue](https://github.com/sempitern0/pixel-space-background-generator/issues)
+with your Godot version, platform, seed, settings and reproduction steps.
+
+## Credits and license
+
+Original generator and visual algorithms by [Deep-Fold](https://github.com/Deep-Fold).
+Godot port originally published by Ninetailsrabbit, maintained in this repository.
+See [LICENSE](LICENSE) and preserve applicable attribution when redistributing.

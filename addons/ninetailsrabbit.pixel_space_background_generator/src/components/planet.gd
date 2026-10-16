@@ -1,12 +1,8 @@
 @tool
 extends Sprite2D
 
-func _ready():
+func configure(rng: RandomNumberGenerator) -> void:
 	material = material.duplicate()
-	
-	var light_x: float = randf_range(0.0, 1.0)
-	var light_y: float = randf_range(0.0, 1.0)
-	
-	material.set_shader_parameter("light_origin", Vector2(light_x, light_y))
-	material.set_shader_parameter("seed", randf_range(1.0, 10.0))
-	material.set_shader_parameter("pixels", int(scale.x * 100))
+	material.set_shader_parameter("light_origin", Vector2(rng.randf(), rng.randf()))
+	material.set_shader_parameter("seed", rng.randf_range(1.0, 10.0))
+	material.set_shader_parameter("pixels", maxi(1, int(scale.x * 100)))

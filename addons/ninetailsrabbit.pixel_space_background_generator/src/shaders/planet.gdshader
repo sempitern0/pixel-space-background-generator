@@ -62,7 +62,7 @@ vec2 rotate(vec2 vec, float angle) {
 
 vec2 spherify(vec2 uv) {
 	vec2 centered = uv *2.0-1.0;
-	float z = sqrt(1.0 - dot(centered.xy, centered.xy));
+	float z = sqrt(max(0.0, 1.0 - dot(centered.xy, centered.xy)));
 //	float z = pow(1.0 - dot(centered.xy, centered.xy), 0.5);
 	vec2 sphere = centered/(z + 1.0);
 	
