@@ -3,6 +3,8 @@ class_name PixelSpaceBackgroundGenerator extends Control
 
 const BackgroundStarScene: PackedScene = preload("res://addons/pixel_space_background_generator/src/components/background_star.tscn")
 const BackgroundPlanetScene: PackedScene = preload("res://addons/pixel_space_background_generator/src/components/planet.tscn")
+const StarAtlas: Texture2D = preload("res://addons/pixel_space_background_generator/assets/textures/stars-special.png")
+const BatchedStarShader: Shader = preload("res://addons/pixel_space_background_generator/src/shaders/batched_stars.gdshader")
 const DefaultColorScheme: ColorGradient = preload("res://addons/pixel_space_background_generator/src/color_schemes/gradients/desert.tres")
 const DefaultBackgroundColor: Color = Color("171711")
 
@@ -102,6 +104,10 @@ var _active_scheme: ColorGradient
 var _parallax_offset: Vector2 = Vector2.ZERO
 var _star_origin: Dictionary = {}
 var _planet_origin: Dictionary = {}
+var _star_batch: MultiMeshInstance2D
+var _batched_positions: Array[Vector2] = []
+var _batched_types: PackedInt32Array = PackedInt32Array()
+var generated_star_count: int = 0
 var last_seed: int = 0
 var rng := RandomNumberGenerator.new()
 var _prepared: bool = false
@@ -160,6 +166,13 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 @export_tool_button("Export Background", "Image") var export_button: Callable = _export_as_image
 
 @export_category("Stars")
+## Optional high-density renderer: one MultiMesh instead of per-star Sprite2D nodes.
+## Disabling it keeps the original node/texture/material behavior.
+@export var batched_stars: bool = false:
+	set(value):
+		if value != batched_stars:
+			batched_stars = value
+			_update()
 @export var display_stars: bool = true:
 	set(value):
 		if value != display_stars:
@@ -383,6 +396,9 @@ func _create_stars_dust() -> void:
 
 func _create_stars() -> void:
 	remove_stars()
+	_batched_positions.clear()
+	_batched_types.clear()
+	generated_star_count = 0
 	
 	if display_stars:
 		var stars_amount: int = fixed_amount_of_stars
@@ -394,6 +410,8 @@ func _create_stars() -> void:
 		
 		for i in clampi(stars_amount, 0, 4096):
 			_create_star()
+		if batched_stars and not _batched_positions.is_empty():
+			_create_star_batch()
 
 
 func _create_star() -> void:
@@ -428,6 +446,14 @@ func _create_star() -> void:
 			return
 
 	
+	generated_star_count += 1
+	if batched_stars:
+		# Exactly one random glyph selection, matching configure() in the
+		# sprite path. Switching renderers cannot change later planet seeds.
+		_batched_positions.append(place_position)
+		_batched_types.append(rng.randi_range(0, 4))
+		return
+
 	var background_star = BackgroundStarScene.instantiate()
 	background_star.position = place_position
 	background_star.configure(rng)
@@ -440,13 +466,54 @@ func _create_star() -> void:
 	
 
 
+## All variants live in one atlas and one shader material. Rendering scales
+## with one node rather than allocating N SceneTree nodes.
+func _create_star_batch() -> void:
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_2D
+	multimesh.use_custom_data = true
+	var quad := QuadMesh.new()
+	quad.size = Vector2(21.0, 21.0)
+	multimesh.mesh = quad
+	multimesh.instance_count = _batched_positions.size()
+	for i in _batched_positions.size():
+		var depth: float = SpaceComposition.star_depth(last_seed, i, far_star_factor, near_star_factor)
+		multimesh.set_instance_transform_2d(i, Transform2D(0.0, _batched_positions[i]))
+		multimesh.set_instance_custom_data(i, Color(float(_batched_types[i]) / 4.0, depth / 2.0, 0.0, 1.0))
+	_star_batch = MultiMeshInstance2D.new()
+	_star_batch.texture = StarAtlas
+	_star_batch.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_star_batch.multimesh = multimesh
+	var material := ShaderMaterial.new()
+	material.shader = BatchedStarShader
+	material.set_shader_parameter("colorscheme", _active_scheme.gradient)
+	_star_batch.material = material
+	stars_container.add_child(_star_batch)
+	_update_star_batch_offset()
+
+
+## Total number of generated stars, independent of the chosen renderer.
+func get_generated_star_count() -> int:
+	return generated_star_count
+
+
+func _update_star_batch_offset() -> void:
+	if is_instance_valid(_star_batch):
+		var camera: Vector2 = _parallax_offset if parallax_enabled else Vector2.ZERO
+		_star_batch.material.set_shader_parameter("camera_offset", camera)
+
+
 func remove_stars() -> void:
 	for star in stars_container.get_children():
 		stars_container.remove_child(star)
 		star.queue_free()
 			
 	star_objects.clear()
-		
+	_star_batch = null
+	_batched_positions.clear()
+	_batched_types.clear()
+	generated_star_count = 0
+
 #endregion
 
 #region Nebulae
@@ -666,6 +733,7 @@ func set_parallax_offset(camera_position: Vector2) -> void:
 ## Full-canvas fragment shaders are scrolled by uniform, not regenerated.
 ## Turning parallax off restores zero offsets on the next refresh.
 func _apply_shader_parallax() -> void:
+	_update_star_batch_offset()
 	var pixel_size: Vector2 = Vector2(maxf(1.0, size.x), maxf(1.0, size.y))
 	var offset: Vector2 = -_parallax_offset / pixel_size if parallax_enabled else Vector2.ZERO
 	stars_dust.material.set_shader_parameter("parallax_uv_offset", offset * dust_parallax_factor)
