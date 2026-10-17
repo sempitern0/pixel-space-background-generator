@@ -7,26 +7,86 @@ const DefaultColorScheme: ColorGradient = preload("res://addons/pixel_space_back
 const DefaultBackgroundColor: Color = Color("171711")
 
 @export_tool_button("Generate New", "Reload") var generate_button: Callable = generate_new
-@export var randomize_seed: bool = true
-@export var manual_seed: int = 0
+@export var randomize_seed: bool = true:
+	set(value):
+		if value != randomize_seed:
+			randomize_seed = value
+			_update()
+@export var manual_seed: int = 0:
+	set(value):
+		if value != manual_seed:
+			manual_seed = value
+			_update()
 @export_category("Composition")
 ## 0 preserves uniform star positions. Higher values bias stars toward organic clusters.
-@export_range(0.0, 1.0, 0.05) var star_cluster_strength: float = 0.0
+@export_range(0.0, 1.0, 0.05) var star_cluster_strength: float = 0.0:
+	set(value):
+		if value != star_cluster_strength:
+			star_cluster_strength = value
+			_update()
 ## Minimum separation in pixels between planet centers (0 keeps the old behavior).
-@export_range(0.0, 256.0, 1.0) var planet_spacing: float = 0.0
-@export_range(0.0, 0.45, 0.01) var clear_zone_radius: float = 0.0
-@export var composition_focus: Vector2 = Vector2(0.5, 0.5)
-@export var planet_radius_spacing: bool = false
+@export_range(0.0, 256.0, 1.0) var planet_spacing: float = 0.0:
+	set(value):
+		if value != planet_spacing:
+			planet_spacing = value
+			_update()
+@export_range(0.0, 0.45, 0.01) var clear_zone_radius: float = 0.0:
+	set(value):
+		if value != clear_zone_radius:
+			clear_zone_radius = value
+			_update()
+@export var composition_focus: Vector2 = Vector2(0.5, 0.5):
+	set(value):
+		if value != composition_focus:
+			composition_focus = value
+			_update()
+@export var planet_radius_spacing: bool = false:
+	set(value):
+		if value != planet_radius_spacing:
+			planet_radius_spacing = value
+			_update()
 @export_category("Color Direction")
-@export var procedural_palette_enabled: bool = false
-@export var color_harmony: SpaceColorTheory.Harmony = SpaceColorTheory.Harmony.AUTO
-@export var space_atmosphere: SpaceColorTheory.Atmosphere = SpaceColorTheory.Atmosphere.DEEP_SPACE
-@export_range(3, 16, 1) var palette_color_count: int = 8
+@export var procedural_palette_enabled: bool = false:
+	set(value):
+		if value != procedural_palette_enabled:
+			procedural_palette_enabled = value
+			_update()
+@export var color_harmony: SpaceColorTheory.Harmony = SpaceColorTheory.Harmony.AUTO:
+	set(value):
+		if value != color_harmony:
+			color_harmony = value
+			_update()
+@export var space_atmosphere: SpaceColorTheory.Atmosphere = SpaceColorTheory.Atmosphere.DEEP_SPACE:
+	set(value):
+		if value != space_atmosphere:
+			space_atmosphere = value
+			_update()
+@export_range(3, 16, 1) var palette_color_count: int = 8:
+	set(value):
+		if value != palette_color_count:
+			palette_color_count = value
+			_update()
 @export_category("Depth")
-@export var parallax_enabled: bool = false
-@export_range(0.0, 2.0, 0.05) var far_star_factor: float = 0.12
-@export_range(0.0, 2.0, 0.05) var near_star_factor: float = 0.65
-@export_range(0.0, 2.0, 0.05) var planet_parallax_factor: float = 0.85
+@export var parallax_enabled: bool = false:
+	set(value):
+		if value != parallax_enabled:
+			parallax_enabled = value
+			_update()
+@export_range(0.0, 2.0, 0.05) var far_star_factor: float = 0.12:
+	set(value):
+		if value != far_star_factor:
+			far_star_factor = value
+			_update()
+@export_range(0.0, 2.0, 0.05) var near_star_factor: float = 0.65:
+	set(value):
+		if value != near_star_factor:
+			near_star_factor = value
+			_update()
+@export_range(0.0, 2.0, 0.05) var planet_parallax_factor: float = 0.85:
+	set(value):
+		if value != planet_parallax_factor:
+			planet_parallax_factor = value
+			_update()
 var _active_scheme: ColorGradient
 var _parallax_offset: Vector2 = Vector2.ZERO
 var _star_origin: Dictionary = {}
@@ -35,12 +95,30 @@ var last_seed: int = 0
 var rng := RandomNumberGenerator.new()
 var _prepared: bool = false
 var _update_pending: bool = false
+var _update_serial: int = 0
+var _last_change_usec: int = 0
+var _has_generated: bool = false
+var _generating: bool = false
+const AUTO_REFRESH_DELAY_USEC: int = 140000
+
+@export_category("Preview")
+## Setting several controls in one frame causes only one update.
+@export var auto_regenerate: bool = true:
+	set(value):
+		if value != auto_regenerate:
+			auto_regenerate = value
+			if value:
+				_update()
 @export var tiled: bool = false:
 	set(value):
 		if value != tiled:
 			tiled = value
 			_update()
-@export var tile_offset: float = 10.0
+@export var tile_offset: float = 10.0:
+	set(value):
+		if value != tile_offset:
+			tile_offset = value
+			_update()
 @export var reduce_background: bool = false:
 	set(value):
 		if value != reduce_background:
@@ -131,11 +209,27 @@ var _update_pending: bool = false
 			_update()
 @export_category("Planet surfaces")
 ## 0 preserves the legacy planet shader behavior.
-@export_enum("Classic", "Rocky", "Gas giant", "Ice") var planet_surface: int = 0
-@export_range(0.0, 1.0, 0.05) var planet_surface_detail: float = 0.65
+@export_enum("Classic", "Rocky", "Gas giant", "Ice") var planet_surface: int = 0:
+	set(value):
+		if value != planet_surface:
+			planet_surface = value
+			_update()
+@export_range(0.0, 1.0, 0.05) var planet_surface_detail: float = 0.65:
+	set(value):
+		if value != planet_surface_detail:
+			planet_surface_detail = value
+			_update()
 @export_category("Nebulae")
-@export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0
-@export_range(0.0, 1.0, 0.05) var nebula_coverage: float = 0.5
+@export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0:
+	set(value):
+		if value != nebula_filaments:
+			nebula_filaments = value
+			_update()
+@export_range(0.0, 1.0, 0.05) var nebula_coverage: float = 0.5:
+	set(value):
+		if value != nebula_coverage:
+			nebula_coverage = value
+			_update()
 @export var display_nebulaes: bool = true:
 	set(value):
 		if value != display_nebulaes:
@@ -178,16 +272,31 @@ func _ready() -> void:
 	generate_new()
 
 
+## Explicit reroll. A fresh seed is drawn only if randomize_seed is enabled.
 func generate_new() -> void:
-	_update_pending = false
+	_cancel_auto_update()
+	_regenerate(true)
+
+
+## Update all layers with the current selected seed.
+func regenerate_current() -> void:
+	_cancel_auto_update()
+	_regenerate(false)
+
+
+func _regenerate(new_seed: bool) -> void:
 	if not _prepared:
 		return
+	_generating = true
 	if current_color_scheme == null or current_color_scheme.gradient == null:
 		current_color_scheme = DefaultColorScheme
-	if randomize_seed:
-		rng.randomize()
-		last_seed = rng.seed
-	else:
+	if new_seed or not _has_generated:
+		if randomize_seed:
+			rng.randomize()
+			last_seed = rng.seed
+		else:
+			last_seed = manual_seed
+	elif not randomize_seed:
 		last_seed = manual_seed
 	rng.seed = last_seed
 	_active_scheme = SpaceColorTheory.generate(last_seed, color_harmony, space_atmosphere, palette_color_count) if procedural_palette_enabled else current_color_scheme
@@ -203,25 +312,41 @@ func generate_new() -> void:
 	_create_stars()
 	_create_planets()
 	_create_nebulae()
-	
-	
+	_has_generated = true
+	_generating = false
+
+
 func change_background_color(new_color: Color) -> void:
 	if background:
 		background.color = new_color
 	
 	
+## Coalesce property changes while moving Inspector sliders.
 func _update() -> void:
-	if _prepared and not _update_pending:
-		_update_pending = true
-		_flush_update.call_deferred()
-
-
-func _flush_update() -> void:
-	if not _update_pending:
+	if not auto_regenerate or not _prepared or _generating or not is_inside_tree():
 		return
+	_last_change_usec = Time.get_ticks_usec()
+	if _update_pending:
+		return
+	_update_pending = true
+	_update_serial += 1
+	_run_auto_update.call_deferred(_update_serial)
+
+
+func _cancel_auto_update() -> void:
+	_update_serial += 1
 	_update_pending = false
-	if is_inside_tree():
-		generate_new()
+
+
+func _run_auto_update(serial: int) -> void:
+	while serial == _update_serial and _update_pending and is_inside_tree():
+		var remaining: int = AUTO_REFRESH_DELAY_USEC - (Time.get_ticks_usec() - _last_change_usec)
+		if remaining <= 0:
+			break
+		await get_tree().create_timer(float(remaining) / 1000000.0).timeout
+	if serial != _update_serial or not _update_pending or not is_inside_tree():
+		return
+	regenerate_current()
 
 
 #region Stars
