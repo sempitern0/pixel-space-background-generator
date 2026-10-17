@@ -5,6 +5,7 @@ extends Control
 var streaming: SpaceInfiniteParallax
 var info: Label
 var travel: float = 0.0
+var vertical: float = 0.0
 var move_speed: float = 240.0
 var automatic: bool = true
 var style: int = 0
@@ -29,10 +30,12 @@ func _ready() -> void:
 	bar.add_child(toggle)
 	var reset := Button.new()
 	reset.text = "Reset [R]"
-	reset.pressed.connect(func() -> void: travel = 0.0)
+	reset.pressed.connect(func() -> void:
+		travel = 0.0
+		vertical = 0.0)
 	bar.add_child(reset)
 	var picker := OptionButton.new()
-	for preset in ["Alien ridges", "Dunes", "Asteroid silhouettes"]:
+	for preset in ["Open space", "Asteroid belt", "Orbital debris", "Nebula corridor", "Frozen void"]:
 		picker.add_item(preset)
 	picker.item_selected.connect(func(index: int) -> void:
 		style = index
@@ -49,7 +52,7 @@ func _ready() -> void:
 	info = Label.new()
 	info.position = Vector2(15, 55)
 	add_child(info)
-	streaming.update_camera(Vector2.ZERO, get_viewport_rect().size.x)
+	streaming.update_camera(Vector2.ZERO, get_viewport_rect().size.x, get_viewport_rect().size.y)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -59,14 +62,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				automatic = not automatic
 			KEY_R:
 				travel = 0.0
+				vertical = 0.0
 
 
 func _process(delta: float) -> void:
 	var direction: float = Input.get_axis("ui_left", "ui_right")
+	vertical += Input.get_axis("ui_up", "ui_down") * move_speed * delta
 	if direction != 0.0:
 		travel += direction * move_speed * delta
 	elif automatic:
 		travel += move_speed * delta
-	streaming.update_camera(Vector2(travel, 0.0), get_viewport_rect().size.x)
-	info.text = "Infinite 2D | camera X: %.0f | live chunks: %d | style: %s | left/right to steer" % [
-		travel, streaming.get_chunk_count(), ["Ridges", "Dunes", "Asteroids"][style]]
+	streaming.update_camera(Vector2(travel, vertical), get_viewport_rect().size.x, get_viewport_rect().size.y)
+	info.text = "Infinite 2D | camera X: %.0f | live chunks: %d | style: %s | arrows to steer in X/Y" % [
+		travel, streaming.get_chunk_count(), ["Open space", "Asteroids", "Debris", "Nebula", "Frozen void"][style]]

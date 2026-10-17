@@ -200,3 +200,16 @@ scrolling.update_camera(camera.global_position, get_viewport_rect().size.x)
 ```
 
 Options include `chunk_width`, `layer_height`, `buffer_chunks`, landscape palette, preset and individual layer speeds. The camera demo lets you steer with left/right, toggle automatic travel using Space, reset using R, switch archetypes and adjust movement speed. Both demos are independent; existing generator assets, PNG exports and seeds remain backward-compatible. Godot 4.7 graphical validation is still required.
+
+## Infinite space streaming (2D shooters)
+
+`SpaceInfiniteParallax` now uses **existing star-atlas sprites and planet shaders, polygonal asteroids, orbital debris, and seamless world-sampled dust/nebula shaders** instead of unrelated mountain silhouettes. Chunks are deterministic, bounded in memory and stream across both X and Y, including backwards movement. Five themes: Open space, Asteroid belt, Orbital debris, Nebula corridor and Frozen void. Run `demo/infinite_parallax_preview.tscn` with F6, steer with arrows and change the theme and speed. The faux-3D mode remains independent.
+
+```gdscript
+var backdrop := SpaceInfiniteParallax.new()
+add_child(backdrop)
+backdrop.configure(2026, 512, 720, 1)
+backdrop.update_camera(camera.global_position, viewport_size.x, viewport_size.y)
+```
+
+The assets are decorative and not physical gameplay entities. An infinite world cannot be exported into a finite PNG without specifying a capture range. Previous flat terrestrial silhouettes are retired from this mode. Godot 4.7 visual validation is still pending.

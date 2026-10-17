@@ -207,3 +207,16 @@ fondo.update_camera(camera.global_position, get_viewport_rect().size.x)
 ```
 
 Puedes definir `chunk_width`, `layer_height`, `buffer_chunks`, los colores, el preset y la velocidad de cada plano. En la demo se prueba con flechas izquierda/derecha, Espacio para alternar movimiento automático, R para volver al origen, selector de escenario y velocidad. Ambos modos son independientes: no se alteran por defecto los fondos o las exportaciones existentes. Falta validar gráficamente en Godot 4.7.
+
+## Streaming espacial infinito (shooters 2D)
+
+El componente `SpaceInfiniteParallax` ya no dibuja montañas: ahora genera segmentos de **estrellas del atlas, planetas del addon, asteroides poligonales, chatarra y campos de polvo y nebulosas con shaders del proyecto**. Reutiliza los mismos segmentos de forma determinista, limita los nodos activos y soporta movimiento horizontal, vertical y retroceso. Cinco ambientes: Open space, Asteroid belt, Orbital debris, Nebula corridor y Frozen void. Abre `demo/infinite_parallax_preview.tscn` (F6); mueve la cámara con las flechas, cambia el ambiente y la velocidad. El modo de profundidad simulada sigue independiente.
+
+```gdscript
+var fondo := SpaceInfiniteParallax.new()
+add_child(fondo)
+fondo.configure(2026, 512, 720, 1)
+fondo.update_camera(camera.global_position, viewport_size.x, viewport_size.y)
+```
+
+Los objetos son decorativos, sin física ni enemigos. La exportación de mundo infinito no equivale a un PNG finito. Las siluetas montañosas anteriores dejan de formar parte de este modo. **Validación visual en Godot 4.7 pendiente**.

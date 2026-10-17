@@ -103,3 +103,7 @@ Abrir repo `sempitern0/pixel-space-background-generator` en `main`, revisar comm
 - Tests: continuidad exacta de extremos de segmentos, resultados negativos y positivos, número acotado de nodos, reconstrucción de segmentos anteriores y suavizado de cámara.
 - Limitaciones: el 2D infinito actual construye siluetas en tiempo real y no genera colisiones físicas ni exporta mapas infinitos (que no cabrían en PNG). Queda pendiente incorporar decoraciones temáticas y exportación de una región finita del mundo 2D.
 - Estado: cambios publicados directamente en `main` con `[skip ci]`; ejecutar pruebas en Godot 4.7 antes de dar por validada la renderización.
+
+## Revisión: streaming espacial para shooters 2D
+
+Se sustituyen siluetas de montañas por capas decorativas con estrellas del atlas existente, planetas shader del generador, asteroides poligonales, escombros y campos de polvo y nebulosas con shader en coordenadas mundiales. La generación es reproducible por semilla, capa y celda firmada XY; se descargan las celdas fuera de ventana visible. La demo infinita mantiene el mismo nombre y añade desplazamiento vertical, cinco ambientes espaciales y controles de velocidad. El sistema anterior de terreno deja de estar disponible. Pendiente validar la renderización y el coste en Godot 4.7, especialmente el rendimiento de los shaders y recuento de draw calls.

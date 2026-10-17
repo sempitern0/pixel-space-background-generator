@@ -152,27 +152,25 @@ func run() -> void:
 	g.nebula_profile = 0
 	g.regenerate_current()
 	g.auto_regenerate = true
-	# Infinite platformer chunks are deterministic, seamless and bounded.
+	# Infinite space: stable coordinates, signed chunk identities, bounded 2D streaming.
 	var infinite := SpaceInfiniteParallax.new()
 	infinite.world_seed = 241
 	infinite.chunk_width = 256
 	infinite.layer_height = 180
 	root.add_child(infinite)
-	var heights_zero: PackedFloat32Array = infinite.get_chunk_signature(0, 0)
-	var heights_next: PackedFloat32Array = infinite.get_chunk_signature(0, 1)
-	var heights_neg: PackedFloat32Array = infinite.get_chunk_signature(0, -1)
-	assert(is_equal_approx(heights_zero[heights_zero.size() - 1], heights_next[0]))
-	assert(is_equal_approx(heights_neg[heights_neg.size() - 1], heights_zero[0]))
-	infinite.update_camera(Vector2(0, 0), 320)
-	var count_initial: int = infinite.get_chunk_count()
-	infinite.update_camera(Vector2(80000, 0), 320)
-	var count_forward: int = infinite.get_chunk_count()
-	assert(count_forward <= 30, "Infinite scene must recycle chunks")
-	infinite.update_camera(Vector2(-80000, 0), 320)
-	assert(infinite.get_chunk_count() <= 30)
-	infinite.update_camera(Vector2(0, 0), 320)
-	assert(infinite.get_chunk_signature(0, 0) == heights_zero)
-	assert(infinite.get_chunk_count() == count_initial)
+	var sig: PackedInt32Array = infinite.get_chunk_signature(1, 0, 0)
+	assert(sig == infinite.get_chunk_signature(1, 0, 0))
+	assert(SpaceParallaxChunk.chunk_seed(241, 0, Vector2i(-1, 0)) == SpaceParallaxChunk.chunk_seed(241, 0, Vector2i(-1, 0)))
+	assert(SpaceParallaxChunk.chunk_seed(241, 0, Vector2i(-1, 0)) != SpaceParallaxChunk.chunk_seed(241, 0, Vector2i(0, 0)))
+	infinite.update_camera(Vector2.ZERO, 320, 180)
+	var original_count: int = infinite.get_chunk_count()
+	infinite.update_camera(Vector2(80000, 70000), 320, 180)
+	assert(infinite.get_chunk_count() < 100)
+	infinite.update_camera(Vector2(-80000, -70000), 320, 180)
+	assert(infinite.get_chunk_count() < 100)
+	infinite.update_camera(Vector2.ZERO, 320, 180)
+	assert(infinite.get_chunk_signature(1, 0, 0) == sig)
+	assert(infinite.get_chunk_count() == original_count)
 	infinite.queue_free()
 	# Depth shaping and camera smoothing preserve endpoints and converge.
 	g.auto_regenerate = false
