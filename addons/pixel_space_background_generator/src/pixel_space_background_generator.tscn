@@ -13,22 +13,22 @@ colors = PackedColorArray(0, 0, 0, 1, 0.0392157, 0.0392157, 0.0392157, 1, 0.0980
 gradient = SubResource("Gradient_ckk8g")
 width = 2048
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_jlk5f"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3lgna"]
 shader = ExtResource("2")
 shader_parameter/size = 10.0
 shader_parameter/OCTAVES = 8
-shader_parameter/seed = 6.081733
+shader_parameter/seed = 4.9898176
 shader_parameter/pixels = 1280.0
 shader_parameter/should_tile = false
 shader_parameter/reduce_background = false
 shader_parameter/colorscheme = SubResource("GradientTexture1D_gbm30")
 shader_parameter/uv_correct = Vector2(1.7777778, 1)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_3wp8h"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jlk5f"]
 shader = ExtResource("3")
 shader_parameter/size = 5.0
 shader_parameter/OCTAVES = 3
-shader_parameter/seed = 3.9102929
+shader_parameter/seed = 7.7732925
 shader_parameter/pixels = 1280.0
 shader_parameter/colorscheme = SubResource("GradientTexture1D_gbm30")
 shader_parameter/background_color = Color(0, 0, 0, 1)
@@ -65,7 +65,7 @@ mouse_filter = 2
 color = Color(0.2784314, 0.19215687, 0.13333334, 1)
 
 [node name="StarsDust" type="ColorRect" parent="." unique_id=344994463]
-material = SubResource("ShaderMaterial_jlk5f")
+material = SubResource("ShaderMaterial_3lgna")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -75,7 +75,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Nebulae" type="ColorRect" parent="." unique_id=1729747034]
-material = SubResource("ShaderMaterial_3wp8h")
+material = SubResource("ShaderMaterial_jlk5f")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
