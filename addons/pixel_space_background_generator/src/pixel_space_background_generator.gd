@@ -589,6 +589,55 @@ func export_png(path: String) -> Error:
 	return error
 
 
+## Save individual transparent PNGs for external parallax pipelines.
+## Layer names: background, dust, nebula, stars and planets.
+## Does not reroll the seed, and restores no scene state because it only
+## renders isolated duplicates into a temporary SubViewport.
+func export_layers(directory: String, prefix: String = "space") -> Error:
+	if not _prepared or not is_inside_tree():
+		return ERR_UNCONFIGURED
+	if DisplayServer.get_name() == "headless":
+		return ERR_UNAVAILABLE
+	if size.x < 1.0 or size.y < 1.0 or size.x > 4096.0 or size.y > 4096.0:
+		return ERR_INVALID_PARAMETER
+	var error: Error = DirAccess.make_dir_recursive_absolute(directory)
+	if error != OK:
+		return error
+	var layers: Array[CanvasItem] = [background, stars_dust, nebulae, stars_container, planet_container]
+	var names: Array[String] = ["background", "dust", "nebula", "stars", "planets"]
+	for i in layers.size():
+		# Hidden layers remain transparent, never reactivated for an export.
+		var result: Image = await _capture_layer(layers[i])
+		if result == null or result.is_empty():
+			return ERR_CANT_CREATE
+		error = result.save_png("%s/%s_%s.png" % [directory.trim_suffix("/"), prefix, names[i]])
+		if error != OK:
+			return error
+	return OK
+
+
+func _capture_layer(source: CanvasItem) -> Image:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(size)
+	viewport.disable_3d = true
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	var canvas := Control.new()
+	canvas.size = size
+	viewport.add_child(canvas)
+	var copy: CanvasItem = source.duplicate(0)
+	canvas.add_child(copy)
+	if copy is Control:
+		copy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(viewport)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var result: Image = viewport.get_texture().get_image()
+	viewport.queue_free()
+	return result
+
+
 func _export_as_image() -> Error:
 	var error := DirAccess.make_dir_recursive_absolute(export_path)
 	if error == OK:
