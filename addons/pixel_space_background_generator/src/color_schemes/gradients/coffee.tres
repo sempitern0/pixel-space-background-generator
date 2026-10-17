@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ColorGradient" load_steps=4 format=3 uid="uid://crdtfarlju6do"]
+[gd_resource type="Resource" script_class="ColorGradient" format=3 uid="uid://crdtfarlju6do"]
 
 [ext_resource type="Script" uid="uid://bupo4w3xfx3e8" path="res://addons/pixel_space_background_generator/src/color_schemes/gradients/color_gradient.gd" id="1_k14w7"]
 

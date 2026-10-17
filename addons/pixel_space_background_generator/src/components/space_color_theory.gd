@@ -56,7 +56,7 @@ static func generate(seed_value: int, harmony: Harmony = Harmony.AUTO, atmospher
 			saturation = minf(0.85, base_sat + 0.17)
 		elif i == n - 1:
 			saturation = 0.12
-		var brightness: float = lerpf(0.035, 0.94, powf(t, 1.42))
+		var brightness: float = lerpf(0.035, 0.94, pow(t, 1.42))
 		colors.append(Color.from_hsv(hue, saturation, brightness))
 		offsets.append(t)
 	var gradient := Gradient.new()
