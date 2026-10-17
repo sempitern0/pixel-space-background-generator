@@ -118,6 +118,40 @@ func run() -> void:
 	assert(g.star_objects.size() == 96)
 	assert(g.nebulae.material.get_shader_parameter("nebula_profile") == 0)
 	g.auto_regenerate = true
+	# Purely visual updates must retain the exact star and planet instances.
+	g.auto_regenerate = false
+	g.randomize_seed = false
+	g.manual_seed = 42
+	g.fixed_amount_of_stars = 48
+	g.fixed_amount_of_planets = 3
+	g.batched_stars = false
+	g.generate_new()
+	var preserved_star: Node2D = g.star_objects[0]
+	var preserved_planet: Node2D = g.planet_objects[0]
+	var preserved_seed: int = g.last_seed
+	var preserved_snapshot: Array = snapshot(g)
+	g.nebula_profile = 2
+	g.planet_surface_detail = 0.92
+	g.color_harmony = SpaceColorTheory.Harmony.TRIADIC
+	g.refresh_visuals()
+	assert(g.star_objects[0] == preserved_star)
+	assert(g.planet_objects[0] == preserved_planet)
+	assert(g.last_seed == preserved_seed)
+	assert(snapshot(g) == preserved_snapshot)
+	assert(g.nebulae.material.get_shader_parameter("nebula_profile") == 2)
+	assert(g.planet_objects[0].material.get_shader_parameter("surface_detail") == 0.92)
+	g.batched_stars = true
+	g.regenerate_current()
+	var saved_mesh: MultiMeshInstance2D = g._star_batch
+	g.far_star_factor = 0.20
+	g.near_star_factor = 0.80
+	g.refresh_visuals()
+	assert(g._star_batch == saved_mesh)
+	assert(g.last_seed == preserved_seed)
+	g.batched_stars = false
+	g.nebula_profile = 0
+	g.regenerate_current()
+	g.auto_regenerate = true
 	# Mixed surfaces do not advance the generator RNG or modify other layers.
 	assert(SpaceComposition.surface_for_planet(42, 0) == 2)
 	assert(SpaceComposition.surface_for_planet(42, 1) == 3)

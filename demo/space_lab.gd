@@ -13,6 +13,7 @@ var composition_toggle: CheckBox
 var batch_toggle: CheckBox
 var nebula_picker: OptionButton
 var palette_toggle: CheckBox
+var benchmark_button: Button
 var status: Label
 
 
@@ -54,6 +55,10 @@ func _ready() -> void:
 	for label in ["Nebula: Classic", "Wisps", "Veils", "Cloud banks", "Void pockets"]:
 		nebula_picker.add_item(label)
 	controls.add_child(nebula_picker)
+	benchmark_button = Button.new()
+	benchmark_button.text = "Benchmark stars"
+	controls.add_child(benchmark_button)
+	benchmark_button.pressed.connect(_benchmark_stars)
 	status = Label.new()
 	layout.add_child(status)
 	var stage := Control.new()
@@ -112,3 +117,27 @@ func _export_layers() -> void:
 	var target: String = "user://space_layers_%d" % int(seed_input.value)
 	var error: Error = await generator.export_layers(target, "background")
 	status.text = ProjectSettings.globalize_path(target) if error == OK else error_string(error)
+
+
+## Local CPU generation comparison (does not measure GPU rendering time).
+func _benchmark_stars() -> void:
+	var previous_batch: bool = generator.batched_stars
+	var previous_stars: int = generator.fixed_amount_of_stars
+	var previous_random: bool = generator.randomize_seed
+	var previous_auto: bool = generator.auto_based_on_viewport_size
+	generator.auto_regenerate = false
+	generator.randomize_seed = false
+	generator.auto_based_on_viewport_size = false
+	generator.fixed_amount_of_stars = 1000
+	generator.batched_stars = false
+	generator.regenerate_current()
+	var legacy_ms: float = generator.last_generation_ms
+	generator.batched_stars = true
+	generator.regenerate_current()
+	var batch_ms: float = generator.last_generation_ms
+	generator.batched_stars = previous_batch
+	generator.fixed_amount_of_stars = previous_stars
+	generator.randomize_seed = previous_random
+	generator.auto_based_on_viewport_size = previous_auto
+	generator.regenerate_current()
+	status.text = "CPU build 1000 stars · sprites %.2f ms · MultiMesh %.2f ms" % [legacy_ms, batch_ms]
