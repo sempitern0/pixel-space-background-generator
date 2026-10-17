@@ -89,6 +89,20 @@ const DefaultBackgroundColor: Color = Color("171711")
 		if value != planet_parallax_factor:
 			planet_parallax_factor = value
 			_update_visual()
+## Non-linear depth distribution and size cues. Defaults preserve old artwork.
+@export_range(0.4, 3.0, 0.1) var star_depth_curve: float = 1.0:
+	set(value):
+		if value != star_depth_curve:
+			star_depth_curve = value
+			_update_visual()
+@export_range(0.0, 1.0, 0.05) var star_depth_size: float = 0.0:
+	set(value):
+		if value != star_depth_size:
+			star_depth_size = value
+			_update_visual()
+## Follow smoothing applies only through follow_parallax_target(), not the
+## original set_parallax_offset() API.
+@export_range(0.0, 30.0, 0.5) var parallax_follow_rate: float = 0.0
 ## Shader layers scroll independently from star sprites and planets.
 @export_range(0.0, 2.0, 0.05) var dust_parallax_factor: float = 0.06:
 	set(value):
@@ -467,7 +481,8 @@ func refresh_visuals() -> void:
 		var mesh: MultiMesh = _star_batch.multimesh
 		for index in mesh.instance_count:
 			var custom: Color = mesh.get_instance_custom_data(index)
-			custom.g = SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor) / 2.0
+			custom.g = _depth_for_star(index) / 2.0
+			mesh.set_instance_transform_2d(index, Transform2D(0.0, _batched_positions[index]).scaled_local(Vector2.ONE * _size_for_star(index)))
 			mesh.set_instance_custom_data(index, custom)
 	else:
 		for star in star_objects:
@@ -487,13 +502,25 @@ func refresh_visuals() -> void:
 	last_visual_refresh_ms = float(Time.get_ticks_usec() - started) / 1000.0
 
 
+## Normalized seeded depth shapes nearer/farther stars without changing RNG.
+func _depth_for_star(index: int) -> float:
+	var unit: float = SpaceComposition.star_depth(last_seed, index, 0.0, 1.0)
+	return lerpf(far_star_factor, near_star_factor, powf(unit, clampf(star_depth_curve, 0.4, 3.0)))
+
+
+func _size_for_star(index: int) -> float:
+	var normalized: float = SpaceComposition.star_depth(last_seed, index, 0.0, 1.0)
+	return lerpf(1.0, lerpf(0.65, 1.42, normalized), clampf(star_depth_size, 0.0, 1.0))
+
+
 ## Update positions from stored, generated coordinates without drift.
 func _sync_parallax_positions() -> void:
 	var camera: Vector2 = _parallax_offset if parallax_enabled else Vector2.ZERO
 	for index in star_objects.size():
 		var star: Node2D = star_objects[index]
 		if is_instance_valid(star):
-			star.position = _star_origin[star] - camera * SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor)
+			star.position = _star_origin[star] - camera * _depth_for_star(index)
+			star.scale = Vector2.ONE * _size_for_star(index)
 	for planet in planet_objects:
 		if is_instance_valid(planet):
 			planet.position = _planet_origin[planet] - camera * planet_parallax_factor
@@ -581,7 +608,7 @@ func _create_star() -> void:
 	star_objects.append(background_star)
 	_star_origin[background_star] = place_position
 	if parallax_enabled:
-		background_star.position = place_position - _parallax_offset * SpaceComposition.star_depth(last_seed, star_objects.size() - 1, far_star_factor, near_star_factor)
+		background_star.position = place_position - _parallax_offset * _depth_for_star(star_objects.size() - 1)
 	
 
 
@@ -596,8 +623,8 @@ func _create_star_batch() -> void:
 	multimesh.mesh = quad
 	multimesh.instance_count = _batched_positions.size()
 	for i in _batched_positions.size():
-		var depth: float = SpaceComposition.star_depth(last_seed, i, far_star_factor, near_star_factor)
-		multimesh.set_instance_transform_2d(i, Transform2D(0.0, _batched_positions[i]))
+		var depth: float = _depth_for_star(i)
+		multimesh.set_instance_transform_2d(i, Transform2D(0.0, _batched_positions[i]).scaled_local(Vector2.ONE * _size_for_star(i)))
 		multimesh.set_instance_custom_data(i, Color(float(_batched_types[i]) / 4.0, depth / 2.0, 0.0, 1.0))
 	_star_batch = MultiMeshInstance2D.new()
 	_star_batch.texture = StarAtlas
@@ -873,6 +900,8 @@ func export_parallax_bundle(directory: String, prefix: String = "space") -> Erro
 			"nebula": nebula_parallax_factor,
 			"far_stars": far_star_factor,
 			"near_stars": near_star_factor,
+			"star_depth_curve": star_depth_curve,
+			"star_depth_size": star_depth_size,
 			"planets": planet_parallax_factor,
 			"flattened_stars_note": "Individual star depths require scene recreation from seed."
 		},
@@ -919,6 +948,16 @@ func set_parallax_offset(camera_position: Vector2) -> void:
 	_parallax_offset = camera_position
 	if _prepared:
 		_sync_parallax_positions()
+
+
+## Delta-aware smooth following without changing the immediate legacy API.
+## Exponential smoothing is framerate-independent and valid for large jumps.
+func follow_parallax_target(camera_position: Vector2, delta: float) -> void:
+	if parallax_follow_rate <= 0.0 or delta <= 0.0:
+		set_parallax_offset(camera_position)
+		return
+	var weight: float = 1.0 - exp(-maxf(0.0, delta) * parallax_follow_rate)
+	set_parallax_offset(_parallax_offset.lerp(camera_position, weight))
 
 
 ## Full-canvas fragment shaders are scrolled by uniform, not regenerated.
