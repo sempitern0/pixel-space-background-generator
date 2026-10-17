@@ -87,6 +87,17 @@ const DefaultBackgroundColor: Color = Color("171711")
 		if value != planet_parallax_factor:
 			planet_parallax_factor = value
 			_update()
+## Shader layers scroll independently from star sprites and planets.
+@export_range(0.0, 2.0, 0.05) var dust_parallax_factor: float = 0.06:
+	set(value):
+		if value != dust_parallax_factor:
+			dust_parallax_factor = value
+			_update()
+@export_range(0.0, 2.0, 0.05) var nebula_parallax_factor: float = 0.10:
+	set(value):
+		if value != nebula_parallax_factor:
+			nebula_parallax_factor = value
+			_update()
 var _active_scheme: ColorGradient
 var _parallax_offset: Vector2 = Vector2.ZERO
 var _star_origin: Dictionary = {}
@@ -219,6 +230,13 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 		if value != planet_surface_detail:
 			planet_surface_detail = value
 			_update()
+## With this enabled, a scene can contain Classic, Rocky, Gas and Ice.
+## Chosen by the seed and planet order, without additional RNG draws.
+@export var mixed_planet_surfaces: bool = false:
+	set(value):
+		if value != mixed_planet_surfaces:
+			mixed_planet_surfaces = value
+			_update()
 @export_category("Nebulae")
 @export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0:
 	set(value):
@@ -312,6 +330,7 @@ func _regenerate(new_seed: bool) -> void:
 	_create_stars()
 	_create_planets()
 	_create_nebulae()
+	_apply_shader_parallax()
 	_has_generated = true
 	_generating = false
 
@@ -499,7 +518,8 @@ func _create_planet() -> void:
 	planet.position = place_position
 	planet.configure(rng)
 	planet.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
-	planet.material.set_shader_parameter("surface_type", clampi(planet_surface, 0, 3))
+	var surface_type: int = SpaceComposition.surface_for_planet(last_seed, planet_objects.size()) if mixed_planet_surfaces else clampi(planet_surface, 0, 3)
+	planet.material.set_shader_parameter("surface_type", surface_type)
 	planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
 	planet_container.add_child(planet)
 	planet_objects.append(planet)
@@ -584,6 +604,7 @@ func _export_as_image() -> Error:
 ## Updates sprite positions without regenerating the seed or shaders.
 func set_parallax_offset(camera_position: Vector2) -> void:
 	_parallax_offset = camera_position
+	_apply_shader_parallax()
 	if not parallax_enabled:
 		return
 	for index in star_objects.size():
@@ -591,6 +612,15 @@ func set_parallax_offset(camera_position: Vector2) -> void:
 		star.position = _star_origin[star] - camera_position * SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor)
 	for planet in planet_objects:
 		planet.position = _planet_origin[planet] - camera_position * planet_parallax_factor
+
+
+## Full-canvas fragment shaders are scrolled by uniform, not regenerated.
+## Turning parallax off restores zero offsets on the next refresh.
+func _apply_shader_parallax() -> void:
+	var pixel_size: Vector2 = Vector2(maxf(1.0, size.x), maxf(1.0, size.y))
+	var offset: Vector2 = -_parallax_offset / pixel_size if parallax_enabled else Vector2.ZERO
+	stars_dust.material.set_shader_parameter("parallax_uv_offset", offset * dust_parallax_factor)
+	nebulae.material.set_shader_parameter("parallax_uv_offset", offset * nebula_parallax_factor)
 
 
 func on_resized() -> void:

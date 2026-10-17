@@ -36,3 +36,9 @@ static func constrain_center(position: Vector2, radius: float, bounds: Vector2) 
 static func star_depth(seed_value: int, index: int, far_speed: float, near_speed: float) -> float:
 	var u: float = fposmod(sin(float(index + 1) * 12.9898 + float(posmod(seed_value, 10007)) * 0.051) * 43758.5453, 1.0)
 	return lerpf(far_speed, near_speed, u)
+
+
+
+## An even rotation of four surfaces; no RNG calls or changes to other layers.
+static func surface_for_planet(seed_value: int, planet_index: int) -> int:
+	return posmod(posmod(seed_value, 4) + maxi(0, planet_index), 4)

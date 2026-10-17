@@ -10,6 +10,8 @@ uniform vec4 background_color : source_color;
 uniform bool should_tile = false;
 uniform bool reduce_background = false;
 uniform vec2 uv_correct = vec2(1.0);
+// Pixel-space layer scroll; zero reproduces the original static shader.
+uniform vec2 parallax_uv_offset = vec2(0.0);
 uniform float filament_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.5;
 
@@ -87,7 +89,7 @@ float cloud_alpha(vec2 uv, float tilesize) {
 
 void fragment() {
 	// pixelizing and dithering
-	vec2 uv = floor((UV) * pixels) / pixels;
+	vec2 uv = floor((UV + parallax_uv_offset) * pixels) / pixels;
 
 	// distance from center
 	float d =  distance(uv, vec2(0.5)) * 0.4;

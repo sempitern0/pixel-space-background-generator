@@ -9,6 +9,8 @@ uniform bool should_tile = false;
 uniform bool reduce_background = false;
 uniform sampler2D colorscheme;
 uniform vec2 uv_correct = vec2(1.0);
+// Pixel-space layer scroll; zero reproduces the original static shader.
+uniform vec2 parallax_uv_offset = vec2(0.0);
 
 float rand(vec2 coord, float tilesize) {
 	if (should_tile) {
@@ -85,7 +87,7 @@ float cloud_alpha(vec2 uv, float tilesize) {
 
 void fragment() {
 	// pixelizing and dithering
-	vec2 uv = floor((UV) * pixels) / pixels * uv_correct;
+	vec2 uv = floor((UV + parallax_uv_offset) * pixels) / pixels * uv_correct;
 	bool dith = dither(uv, UV);
 
 	// noise for the dust
