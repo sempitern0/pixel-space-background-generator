@@ -9,6 +9,8 @@ const PRESETS: Array[Dictionary] = [
 var generator: PixelSpaceBackgroundGenerator
 var picker: OptionButton
 var seed_input: SpinBox
+var composition_toggle: CheckBox
+var palette_toggle: CheckBox
 var status: Label
 
 
@@ -33,6 +35,12 @@ func _ready() -> void:
 	var export_button := Button.new()
 	export_button.text = "Export PNG"
 	controls.add_child(export_button)
+	composition_toggle = CheckBox.new()
+	composition_toggle.text = "Art-directed layout"
+	controls.add_child(composition_toggle)
+	palette_toggle = CheckBox.new()
+	palette_toggle.text = "Color harmony"
+	controls.add_child(palette_toggle)
 	status = Label.new()
 	layout.add_child(status)
 	var stage := Control.new()
@@ -44,6 +52,8 @@ func _ready() -> void:
 	picker.item_selected.connect(_select_preset)
 	generate.pressed.connect(_generate)
 	export_button.pressed.connect(_export_image)
+	composition_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())
+	palette_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())
 	_select_preset(0)
 
 
@@ -61,6 +71,11 @@ func _generate() -> void:
 	generator.fixed_amount_of_planets = int(preset["planets"])
 	generator.star_cluster_strength = float(preset["clusters"])
 	generator.planet_spacing = float(preset["distance"])
+	generator.planet_radius_spacing = composition_toggle.button_pressed
+	generator.clear_zone_radius = 0.18 if composition_toggle.button_pressed else 0.0
+	generator.procedural_palette_enabled = palette_toggle.button_pressed
+	generator.color_harmony = SpaceColorTheory.Harmony.AUTO
+	generator.space_atmosphere = SpaceColorTheory.Atmosphere.COLD_NEBULA if picker.selected == 1 else (SpaceColorTheory.Atmosphere.EERIE_VOID if picker.selected == 2 else SpaceColorTheory.Atmosphere.DEEP_SPACE)
 	generator.planet_surface = int(preset["surface"])
 	generator.nebula_filaments = float(preset["filaments"])
 	generator.nebula_coverage = float(preset["coverage"])

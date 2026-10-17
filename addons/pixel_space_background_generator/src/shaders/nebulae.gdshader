@@ -99,7 +99,7 @@ void fragment() {
 	float n = cloud_alpha(uv * size, size);
 	float n2 = fbm(uv * size + vec2(1, 1), size);
 	float n_lerp = n2 * n;
-	float n_dust = cloud_alpha(uv * size, size);
+	float n_dust = n; // The two expressions are identical; reuse the existing FBM.
 	float n_dust_lerp = n_dust * n_lerp;
 	if (filament_strength > 0.0) {
 		// Domain-warped filaments mix with the original soft cloud field.

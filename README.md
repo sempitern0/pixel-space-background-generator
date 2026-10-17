@@ -124,3 +124,30 @@ var error := await background.export_png("user://gas_giant_scene.png")
 Press **F5** to compare Quiet orbit (classic), Dense starfield (gas giants) and Distant systems (icy planets). Change the seed or export a PNG without bringing editor UI into the image. **F6** on the original addon scene remains available as the raw generator preview.
 
 These are artistic 2D shaders with repeatable composition, **not physical orbital simulations or true 3D planets**. Every planet within one generator currently uses the selected surface family; for mixed families, combine multiple generator scenes. When seamless tiling is essential, inspect the exported composite: the legacy tile mode does not guarantee border-perfect planets or star positions.
+
+## Art-directed composition (opt-in)
+
+**Color harmony:** Turn on `procedural_palette_enabled` to build a deterministic `ColorGradient` for stars, planets and nebulae, with `color_harmony` (Auto, Analogous, Complementary, Split Complementary, Triadic or Neutral Accent), `space_atmosphere` (Deep Space, Cold Nebula, Dusty Galaxy, Eerie Void), and `palette_color_count` (3–16). The gradient is owned by the generator and never modifies the chosen `.tres`. If disabled, the original gradient is used unchanged.
+
+**Composition:** `clear_zone_radius` (0–0.45 of the shorter canvas dimension) and `composition_focus` (normalized point, initially the center) keep individual stars and planet **centers** away from an intended gameplay/UI region. It is a soft composition rule: wide planets can still overlap its edge. `planet_radius_spacing` enables visible-radius-aware separation, treating the existing `planet_spacing` as an **additional edge gap** rather than a center distance. If the canvas is crowded, the generator skips a planet instead of overlapping it. Star clustering remains independent and compatible with these constraints.
+
+**Lightweight parallax:** Set `parallax_enabled = true` and call `set_parallax_offset(camera_position)` in world/camera pixel coordinates. Stars use deterministic individual factors between `far_star_factor` and `near_star_factor`, planets use `planet_parallax_factor`. It updates their Node2D positions without generating anything new. Star dust and nebulas are still stationary shader layers in this iteration; exported PNG captures the current object offsets. Disable the feature to preserve legacy compositions. Turning it off does not automatically reset moved positions: call `set_parallax_offset(Vector2.ZERO)` before disabling.
+
+```gdscript
+@onready var space: PixelSpaceBackgroundGenerator = $PixelSpaceBackgroundGenerator
+
+func _ready() -> void:
+    space.randomize_seed = false
+    space.manual_seed = 2026
+    space.procedural_palette_enabled = true
+    space.space_atmosphere = SpaceColorTheory.Atmosphere.COLD_NEBULA
+    space.planet_radius_spacing = true
+    space.clear_zone_radius = 0.17
+    space.parallax_enabled = true
+    space.generate_new()
+
+func _process(_delta: float) -> void:
+    space.set_parallax_offset(get_viewport().get_camera_2d().global_position)
+```
+
+The **Art-directed layout** and **Color harmony** checkboxes in `demo/space_lab.tscn` let you compare the legacy scene with the new settings at the same seed. The nebula shader also reuses an identical cloud-noise result to reduce redundant GPU work, without intentionally changing its appearance.

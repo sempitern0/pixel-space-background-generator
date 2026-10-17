@@ -131,3 +131,30 @@ var error := await fondo.export_png("user://gigante_gaseoso.png")
 Pulsa **F5** para comparar órbita tranquila, un campo estelar denso con gigantes gaseosos y sistemas lejanos con planetas helados. La exportación PNG conserva solamente el fondo generado. La escena original también funciona con **F6**.
 
 Son shaders 2D artísticos, no órbitas físicas ni planetas 3D. Todos los planetas de una instancia comparten estilo; para combinar familias usa varias escenas generadoras. Verifica los bordes del PNG si necesitas repetición perfectamente continua, ya que el modo tiled anterior no garantiza continuidad de todos los elementos.
+
+## Composición artística (opcional)
+
+**Armonías cromáticas:** Activa `procedural_palette_enabled` para crear un `ColorGradient` reproducible que comparten estrellas, planetas y nebulosas. Configura `color_harmony` (Auto, Análoga, Complementaria, Complementaria dividida, Triádica, Neutros + acento), `space_atmosphere` (Espacio profundo, Nebulosa fría, Galaxia polvorienta, Vacío inquietante) y `palette_color_count` (3–16). El gradiente se crea para cada generador: no modifica los recursos `.tres` originales. Desactivado, se conserva el gradiente existente.
+
+**Composición:** `clear_zone_radius` (0–0,45 de la dimensión menor) y `composition_focus` (punto normalizado) reservan una zona despejada de estrellas y de **centros** planetarios, útil para plataformas, acción o interfaz. Un planeta grande aún puede invadir ligeramente la zona. `planet_radius_spacing` compara radios visibles y utiliza `planet_spacing` como **margen adicional entre bordes**. Si no caben todos los planetas, omite los que provocarían solapamientos. El agrupamiento de estrellas continúa disponible.
+
+**Paralaje ligero:** Activa `parallax_enabled` y llama `set_parallax_offset(camera_position)` con la posición de cámara en píxeles. Las estrellas usan velocidades reproducibles entre `far_star_factor` y `near_star_factor` y los planetas utilizan `planet_parallax_factor`. No vuelve a generar fondos. En esta primera integración, el polvo y las nebulosas continúan siendo capas estáticas de shader. El PNG captura las posiciones actuales. Para volver a la composición original, llama `set_parallax_offset(Vector2.ZERO)` antes de desactivar el paralaje.
+
+```gdscript
+@onready var space: PixelSpaceBackgroundGenerator = $PixelSpaceBackgroundGenerator
+
+func _ready() -> void:
+    space.randomize_seed = false
+    space.manual_seed = 2026
+    space.procedural_palette_enabled = true
+    space.space_atmosphere = SpaceColorTheory.Atmosphere.COLD_NEBULA
+    space.planet_radius_spacing = true
+    space.clear_zone_radius = 0.17
+    space.parallax_enabled = true
+    space.generate_new()
+
+func _process(_delta: float) -> void:
+    space.set_parallax_offset(get_viewport().get_camera_2d().global_position)
+```
+
+En `demo/space_lab.tscn` puedes activar **Art-directed layout** y **Color harmony** para comparar con el mismo seed. El shader de nebulosas también reutiliza un cálculo idéntico de ruido para reducir el trabajo gráfico sin cambiar deliberadamente su aspecto.

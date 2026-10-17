@@ -52,6 +52,46 @@ func run() -> void:
 	g.manual_seed = g.last_seed
 	g.generate_new()
 	assert(snapshot(g) == random_result, "last_seed must reproduce a random result")
+	# New optional art direction is deterministic, has its own gradient and
+	# avoids a central gameplay area without mutating the shared preset.
+	var harmonic: ColorGradient = SpaceColorTheory.generate(42, SpaceColorTheory.Harmony.AUTO, SpaceColorTheory.Atmosphere.COLD_NEBULA)
+	assert(harmonic.gradient != null and harmonic.gradient.gradient.colors.size() == 8)
+	assert(harmonic.gradient.gradient.colors == SpaceColorTheory.generate(42, SpaceColorTheory.Harmony.AUTO, SpaceColorTheory.Atmosphere.COLD_NEBULA).gradient.gradient.colors)
+	assert(SpaceComposition.outside_clear_zone(Vector2(0, 0), Vector2(320, 180), Vector2(0.5, 0.5), 0.15))
+	assert(not SpaceComposition.outside_clear_zone(Vector2(160, 90), Vector2(320, 180), Vector2(0.5, 0.5), 0.15))
+	var simulated_planets: Array[Dictionary] = [{"center": Vector2(50, 50), "radius": 15.0}]
+	assert(not SpaceComposition.can_place_planet(Vector2(78, 50), 12.0, simulated_planets, 5.0))
+	assert(SpaceComposition.can_place_planet(Vector2(90, 50), 12.0, simulated_planets, 5.0))
+	g.procedural_palette_enabled = true
+	g.space_atmosphere = SpaceColorTheory.Atmosphere.COLD_NEBULA
+	g.clear_zone_radius = 0.15
+	g.planet_radius_spacing = true
+	g.planet_spacing = 6.0
+	g.fixed_amount_of_stars = 12
+	g.fixed_amount_of_planets = 3
+	g.manual_seed = 42
+	g.generate_new()
+	var harmonic_snapshot: Array = snapshot(g)
+	var palette_before: ColorGradient = g._active_scheme
+	g.generate_new()
+	assert(snapshot(g) == harmonic_snapshot)
+	assert(g._active_scheme.gradient.gradient.colors == palette_before.gradient.gradient.colors)
+	for star in g.star_objects:
+		assert(SpaceComposition.outside_clear_zone(star.position, g.size, g.composition_focus, g.clear_zone_radius))
+	g.parallax_enabled = true
+	var originals: Array = []
+	for star in g.star_objects:
+		originals.append(star.position)
+	g.set_parallax_offset(Vector2(40, 20))
+	if g.star_objects.size() > 0:
+		assert(g.star_objects[0].position != originals[0])
+	g.set_parallax_offset(Vector2.ZERO)
+	for i in g.star_objects.size():
+		assert(g.star_objects[i].position == originals[i])
+	g.parallax_enabled = false
+	g.procedural_palette_enabled = false
+	g.clear_zone_radius = 0.0
+	g.planet_radius_spacing = false
 	# New composition modes must replay deterministically and obey separation.
 	g.star_cluster_strength = 0.85
 	g.planet_spacing = 42.0
