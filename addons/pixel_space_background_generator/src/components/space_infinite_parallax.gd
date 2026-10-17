@@ -19,6 +19,7 @@ extends Node2D
 
 var _camera_position: Vector2 = Vector2.ZERO
 var _viewport_size: Vector2 = Vector2(960, 540)
+var _previous_sky_rect: Rect2 = Rect2()
 var _layers: Array[Node2D] = []
 var _active: Array[Dictionary] = []
 
@@ -59,6 +60,12 @@ func update_camera(camera_position: Vector2, viewport_width: float, viewport_hei
 	_viewport_size = Vector2(maxf(1.0, viewport_width), maxf(1.0, viewport_height if viewport_height > 0.0 else float(layer_height)))
 	if _layers.is_empty():
 		return
+	# A local background rectangle follows the camera; unlike the old
+	# fixed rectangle, it never runs out after travelling a long distance.
+	var needed := Rect2(camera_position - Vector2.ONE * 4096.0, _viewport_size + Vector2.ONE * 8192.0)
+	if not _previous_sky_rect.has_point(camera_position) or not _previous_sky_rect.encloses(needed):
+		_previous_sky_rect = needed.grow(4096.0)
+		queue_redraw()
 	var side: int = maxi(128, chunk_width)
 	for index in _layers.size():
 		var speed: float = get_layer_speed(index)
@@ -124,4 +131,4 @@ func get_chunk_signature(layer_index: int, chunk_id: int, y: int = 0) -> PackedI
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2(-16384, -16384), Vector2(32768, 32768)), sky_color)
+	draw_rect(_previous_sky_rect, sky_color)
