@@ -152,6 +152,32 @@ func run() -> void:
 	g.nebula_profile = 0
 	g.regenerate_current()
 	g.auto_regenerate = true
+	# Optional organic parameters must replay exactly for the same seed.
+	assert(is_equal_approx(SpaceOrganicVariants.planet_phase(42, 0), SpaceOrganicVariants.planet_phase(42, 0)))
+	assert(SpaceOrganicVariants.planet_scale_factor(42, 0, 0.0) == 1.0)
+	g.auto_regenerate = false
+	g.randomize_seed = false
+	g.manual_seed = 42
+	g.planet_size_variation = 0.65
+	g.planet_organic_strength = 0.75
+	g.planet_rim_strength = 0.45
+	g.nebula_organic_strength = 0.65
+	g.nebula_flow_angle = 35.0
+	g.fixed_amount_of_planets = 3
+	g.generate_new()
+	var organic_snapshot: Array = snapshot(g)
+	assert(g.nebulae.material.get_shader_parameter("organic_strength") == 0.65)
+	for planet in g.planet_objects:
+		assert(planet.material.get_shader_parameter("organic_strength") == 0.75)
+	g.generate_new()
+	assert(snapshot(g) == organic_snapshot)
+	g.planet_organic_strength = 0.0
+	g.planet_rim_strength = 0.0
+	g.planet_size_variation = 0.0
+	g.nebula_organic_strength = 0.0
+	g.nebula_flow_angle = 0.0
+	g.regenerate_current()
+	g.auto_regenerate = true
 	# Mixed surfaces do not advance the generator RNG or modify other layers.
 	assert(SpaceComposition.surface_for_planet(42, 0) == 2)
 	assert(SpaceComposition.surface_for_planet(42, 1) == 3)
@@ -276,6 +302,14 @@ func run() -> void:
 		assert(colors.size() > 8, "Export must contain generated artwork, not a flat/empty image")
 		assert(not colors.has(Color.MAGENTA), "Host UI leaked into export")
 		assert(await g.export_layers("user://space-layers", "test") == OK)
+		assert(await g.export_parallax_bundle("user://space-bundle", "galaxy") == OK)
+		var manifest_path: String = "user://space-bundle/galaxy_manifest.json"
+		assert(FileAccess.file_exists(manifest_path))
+		var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+		assert(int(manifest["seed"]) == g.last_seed)
+		assert(manifest["files"]["composite"] == "galaxy.png")
+		assert(FileAccess.file_exists("user://space-bundle/galaxy.png"))
+		assert(manifest["parallax"].has("nebula"))
 		for layer_name in ["background", "dust", "nebula", "stars", "planets"]:
 			var layer_path: String = "user://space-layers/test_%s.png" % layer_name
 			assert(FileAccess.file_exists(layer_path))
