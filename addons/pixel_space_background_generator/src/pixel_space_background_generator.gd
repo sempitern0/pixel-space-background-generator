@@ -255,7 +255,35 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 		if value != mixed_planet_surfaces:
 			mixed_planet_surfaces = value
 			_update_visual()
+## Geometric silhouette variation: the primary body is largest by design.
+@export_range(0.0, 1.0, 0.05) var planet_size_variation: float = 0.0:
+	set(value):
+		if value != planet_size_variation:
+			planet_size_variation = value
+			_update()
+## Organically warped crust, clouds and ice. Zero preserves the old shader.
+@export_range(0.0, 1.0, 0.05) var planet_organic_strength: float = 0.0:
+	set(value):
+		if value != planet_organic_strength:
+			planet_organic_strength = value
+			_update_visual()
+@export_range(0.0, 1.0, 0.05) var planet_rim_strength: float = 0.0:
+	set(value):
+		if value != planet_rim_strength:
+			planet_rim_strength = value
+			_update_visual()
 @export_category("Nebulae")
+## Organic cloud distortion; additional FBM only when above zero.
+@export_range(0.0, 1.0, 0.05) var nebula_organic_strength: float = 0.0:
+	set(value):
+		if value != nebula_organic_strength:
+			nebula_organic_strength = value
+			_update_visual()
+@export_range(-180.0, 180.0, 5.0) var nebula_flow_angle: float = 0.0:
+	set(value):
+		if value != nebula_flow_angle:
+			nebula_flow_angle = value
+			_update_visual()
 @export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0:
 	set(value):
 		if value != nebula_filaments:
@@ -429,6 +457,8 @@ func refresh_visuals() -> void:
 	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
 	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
 	nebulae.material.set_shader_parameter("nebula_profile", clampi(nebula_profile, 0, 4))
+	nebulae.material.set_shader_parameter("organic_strength", nebula_organic_strength)
+	nebulae.material.set_shader_parameter("flow_angle", deg_to_rad(nebula_flow_angle))
 	stars_container.show_behind_parent = show_stars_behind
 	planet_container.show_behind_parent = show_planets_behind
 	if is_instance_valid(_star_batch):
@@ -450,6 +480,9 @@ func refresh_visuals() -> void:
 			var surface: int = SpaceComposition.surface_for_planet(last_seed, index) if mixed_planet_surfaces else clampi(planet_surface, 0, 3)
 			planet.material.set_shader_parameter("surface_type", surface)
 			planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
+			planet.material.set_shader_parameter("organic_strength", planet_organic_strength)
+			planet.material.set_shader_parameter("rim_strength", planet_rim_strength)
+			planet.material.set_shader_parameter("organic_phase", SpaceOrganicVariants.planet_phase(last_seed, index))
 	_sync_parallax_positions()
 	last_visual_refresh_ms = float(Time.get_ticks_usec() - started) / 1000.0
 
@@ -613,6 +646,8 @@ func _create_nebulae() -> void:
 	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
 	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
 	nebulae.material.set_shader_parameter("nebula_profile", clampi(nebula_profile, 0, 4))
+	nebulae.material.set_shader_parameter("organic_strength", nebula_organic_strength)
+	nebulae.material.set_shader_parameter("flow_angle", deg_to_rad(nebula_flow_angle))
 	
 #endregion
 
@@ -635,6 +670,8 @@ func _create_planets() -> void:
 func _create_planet() -> void:
 	var min_size = min(size.x, size.y)
 	var planet_scale = Vector2.ONE * (rng.randf_range(0.2, 0.7) * rng.randf_range(0.5, 1.0) * min_size * 0.005)
+	if planet_size_variation > 0.0:
+		planet_scale *= SpaceOrganicVariants.planet_scale_factor(last_seed, planet_objects.size(), planet_size_variation)
 	var place_position: Vector2
 	var planet_radius: float = planet_scale.x * 50.0
 
@@ -675,6 +712,9 @@ func _create_planet() -> void:
 	var surface_type: int = SpaceComposition.surface_for_planet(last_seed, planet_objects.size()) if mixed_planet_surfaces else clampi(planet_surface, 0, 3)
 	planet.material.set_shader_parameter("surface_type", surface_type)
 	planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
+	planet.material.set_shader_parameter("organic_strength", planet_organic_strength)
+	planet.material.set_shader_parameter("rim_strength", planet_rim_strength)
+	planet.material.set_shader_parameter("organic_phase", SpaceOrganicVariants.planet_phase(last_seed, planet_objects.size()))
 	planet_container.add_child(planet)
 	planet_objects.append(planet)
 	_planet_origin[planet] = place_position

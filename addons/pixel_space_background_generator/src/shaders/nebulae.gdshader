@@ -16,6 +16,8 @@ uniform float filament_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.5;
 // Classic 0 retains the original output. Alternate shapes reuse sampled noise.
 uniform int nebula_profile : hint_range(0, 4) = 0;
+uniform float organic_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float flow_angle = 0.0;
 
 float rand(vec2 coord, float tilesize) {
 	if (should_tile) {
@@ -105,6 +107,14 @@ void fragment() {
 	float n_lerp = n2 * n;
 	float n_dust = n; // The two expressions are identical; reuse the existing FBM.
 	float n_dust_lerp = n_dust * n_lerp;
+	if (organic_strength > 0.0) {
+		// Organic flows reuse existing samples, avoiding additional FBM loops.
+		vec2 direction = vec2(cos(flow_angle), sin(flow_angle));
+		float sweep = dot(uv * size, direction);
+		float turbulence = sin(sweep * 0.37 + n * 7.0 + seed);
+		float folds = smoothstep(0.20, 0.78, n2 + turbulence * 0.21);
+		n_dust_lerp = mix(n_dust_lerp, n_dust_lerp * (0.48 + folds * 1.19), organic_strength);
+	}
 	if (nebula_profile == 1) { // thin atmospheric wisps
 		n_dust_lerp *= smoothstep(0.25, 0.66, abs(n - n2) * 2.0);
 	} else if (nebula_profile == 2) { // broad translucent veils

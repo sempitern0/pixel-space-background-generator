@@ -9,6 +9,10 @@ uniform sampler2D colorscheme;
 uniform vec2 light_origin;
 uniform int surface_type = 0;
 uniform float surface_detail : hint_range(0.0, 1.0) = 0.65;
+// Optional organic direction. Zero strengths preserve classic pixels.
+uniform float organic_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float rim_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float organic_phase = 0.0;
 
 
 float rand(vec2 coord) {
@@ -105,6 +109,13 @@ void fragment() {
 	float n = fbm(uv * size);
 	float n2 = fbm(uv * size + n*3.0);
 	float mixed = n2 * d_to_light;
+	if (organic_strength > 0.0) {
+		// Slowly warped sampled terrain, no extra FBM call.
+		float flow = sin(uv.x * 18.0 + n * 7.0 + organic_phase * 6.28318);
+		float grain = sin((uv.y + flow * 0.045) * 27.0 + organic_phase * 4.0);
+		float patch = smoothstep(0.24, 0.78, n2 + flow * 0.15 + grain * 0.08);
+		mixed = mix(mixed, (0.12 + patch * 0.79) * d_to_light, organic_strength * 0.48);
+	}
 	if (surface_type == 1) {
 		// Crust and highland breakup: two noise scales and coarse crater contrast.
 		float crust = fbm(uv * size * 2.4 + vec2(seed * 0.17));
@@ -122,6 +133,13 @@ void fragment() {
 		mixed = mix(mixed, (0.70 + polar * 0.25 - cracks * 0.38) * d_to_light, surface_detail);
 	}
 	
+	if (organic_strength > 0.0 && surface_type == 2) {
+		// Gas bands meander instead of following identical latitudes.
+		float warped_latitude = uv.y + (n - 0.5) * (0.13 + organic_strength * 0.22);
+		float swirling = sin(warped_latitude * 24.0 + n2 * organic_strength * 5.0 + organic_phase * 3.0);
+		mixed = mix(mixed, (0.45 + swirling * 0.27) * d_to_light, organic_strength * 0.42);
+	}
+
 	// optionally create some contrast with this
 //	mixed = pow(mixed, 1.0);
 
@@ -133,6 +151,11 @@ void fragment() {
 	// choose and apply colors
 	float col_val = floor(mixed * 15.0) / 7.0;
 	vec3 col = texture(colorscheme, vec2(col_val, 0.0)).rgb;
+	if (rim_strength > 0.0) {
+		float limb = smoothstep(0.34, 0.50, d_to_center);
+		float glow = rim_strength * limb * (0.11 + 0.11 * organic_strength);
+		col = mix(col, texture(colorscheme, vec2(0.90, 0.0)).rgb, glow);
+	}
 	
 	// apply alpha
 	float a = step(d_to_center, 0.5);
