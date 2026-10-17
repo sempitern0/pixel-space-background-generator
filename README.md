@@ -185,3 +185,18 @@ The automatic preview now distinguishes **structural changes** (counts, spacing,
 **Production export:** `await generator.export_parallax_bundle("user://space_pack", "level_01")` creates the composite `level_01.png`, five transparent/full-canvas layers (`level_01_background.png`, `_dust.png`, `_nebula.png`, `_stars.png`, `_planets.png`) and `level_01_manifest.json`, with seed, dimensions, visual options and parallax factors. Valid destinations are `user://` and `res://`, with the normal renderer requirement. The single stars layer is flattened; it does **not** preserve each star's individual depth velocity. For exact runtime parallax, instantiate this generator with the recorded seed and settings; using the exported flattened images reproduces only the coarser layer factors.
 
 **Camera test:** Open `demo/parallax_preview.tscn` and run the scene (F6). A `Camera2D` drives `set_parallax_offset()` while a CanvasLayer keeps the canvas and controls fixed. Observe automatic sinusoidal motion, use arrows/WASD for manual steering, Space to pause, R to reset, sliders for speed/amplitude and **Export bundle** to save the currently rendered composition. The test demonstrates spatial motion, not scientific star positions or hardware benchmark FPS.
+
+## Two parallax modes: faux 3D and infinite 2D
+
+**Depth / faux 3D:** run `demo/parallax_preview.tscn` (F6). Existing star, planet, dust and nebula layers emulate camera depth without a physical 3D world. You can shape the star depth distribution using `star_depth_curve` (default 1) and subtle near/far size cues through `star_depth_size` (default 0, original size). Set `parallax_follow_rate` and use `follow_parallax_target(camera.global_position, delta)` to smooth rapid camera movement with frame-rate-independent exponential damping. The original `set_parallax_offset()` remains immediate for precise positioning and export.
+
+**Infinite platformer / side-scroller:** run `demo/infinite_parallax_preview.tscn` (F6) for a separate traditional 2D scrolling landscape. The reusable `SpaceInfiniteParallax` component generates a trio of continuous procedural silhouette layers (alien ridges, dunes or asteroid-like shapes) along unbounded signed X coordinates, reuses only nearby chunks and can travel forward/backward indefinitely. Each layer uses its own `background_speed`, `midground_speed` or `foreground_speed`; all chunk boundaries are sampled at identical world coordinates, preventing geometry seams. It is not a finite image loop or a physical 3D effect. Use it as a decorative layer, not as a terrain collider.
+
+```gdscript
+var scrolling := SpaceInfiniteParallax.new()
+add_child(scrolling)
+scrolling.configure(2026, 512, 360, 0)
+scrolling.update_camera(camera.global_position, get_viewport_rect().size.x)
+```
+
+Options include `chunk_width`, `layer_height`, `buffer_chunks`, landscape palette, preset and individual layer speeds. The camera demo lets you steer with left/right, toggle automatic travel using Space, reset using R, switch archetypes and adjust movement speed. Both demos are independent; existing generator assets, PNG exports and seeds remain backward-compatible. Godot 4.7 graphical validation is still required.

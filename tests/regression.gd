@@ -152,6 +152,39 @@ func run() -> void:
 	g.nebula_profile = 0
 	g.regenerate_current()
 	g.auto_regenerate = true
+	# Infinite platformer chunks are deterministic, seamless and bounded.
+	var infinite := SpaceInfiniteParallax.new()
+	infinite.world_seed = 241
+	infinite.chunk_width = 256
+	infinite.layer_height = 180
+	root.add_child(infinite)
+	var heights_zero: PackedFloat32Array = infinite.get_chunk_signature(0, 0)
+	var heights_next: PackedFloat32Array = infinite.get_chunk_signature(0, 1)
+	var heights_neg: PackedFloat32Array = infinite.get_chunk_signature(0, -1)
+	assert(is_equal_approx(heights_zero[heights_zero.size() - 1], heights_next[0]))
+	assert(is_equal_approx(heights_neg[heights_neg.size() - 1], heights_zero[0]))
+	infinite.update_camera(Vector2(0, 0), 320)
+	var count_initial: int = infinite.get_chunk_count()
+	infinite.update_camera(Vector2(80000, 0), 320)
+	var count_forward: int = infinite.get_chunk_count()
+	assert(count_forward <= 30, "Infinite scene must recycle chunks")
+	infinite.update_camera(Vector2(-80000, 0), 320)
+	assert(infinite.get_chunk_count() <= 30)
+	infinite.update_camera(Vector2(0, 0), 320)
+	assert(infinite.get_chunk_signature(0, 0) == heights_zero)
+	assert(infinite.get_chunk_count() == count_initial)
+	infinite.queue_free()
+	# Depth shaping and camera smoothing preserve endpoints and converge.
+	g.auto_regenerate = false
+	g.parallax_enabled = true
+	g.star_depth_curve = 1.8
+	g.star_depth_size = 0.45
+	g.parallax_follow_rate = 10.0
+	g.follow_parallax_target(Vector2(200, 0), 0.016)
+	assert(g._parallax_offset.x > 0.0 and g._parallax_offset.x < 200.0)
+	g.set_parallax_offset(Vector2.ZERO)
+	g.parallax_enabled = false
+	g.auto_regenerate = true
 	# Optional organic parameters must replay exactly for the same seed.
 	assert(is_equal_approx(SpaceOrganicVariants.planet_phase(42, 0), SpaceOrganicVariants.planet_phase(42, 0)))
 	assert(SpaceOrganicVariants.planet_scale_factor(42, 0, 0.0) == 1.0)

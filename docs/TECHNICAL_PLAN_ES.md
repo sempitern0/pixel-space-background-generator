@@ -94,3 +94,12 @@ python3 scripts/run_tests.py --godot /ruta/a/godot --render
 ## Para reanudar
 
 Abrir repo `sempitern0/pixel-space-background-generator` en `main`, revisar commits recientes, ejecutar pruebas locales Godot 4.7 y corregir cualquier error detectado antes de añadir sistemas. El usuario autoriza trabajo directo en `main`; todos los commits deben incluir `[skip ci]`. Priorizar usabilidad y calidad pixel art reproducible.
+
+## Actualización: dos paradigmas de parallax (17/10/2026)
+
+- Se conserva el generador con paralaje **3D simulado** y se añaden `star_depth_curve`, `star_depth_size`, `parallax_follow_rate` y `follow_parallax_target()` sin cambiar los valores predeterminados.
+- Se añaden `SpaceInfiniteParallax` y `SpaceParallaxChunk`: generación infinita de siluetas 2D por coordenada mundial firmada; tres capas con velocidades separadas y reciclaje alrededor de cámara.
+- Demo nueva: `demo/infinite_parallax_preview.tscn` con desplazamiento lateral ilimitado, avance/retroceso, selector de paisaje, velocidad y contador de segmentos visibles. Demo de profundidad: `demo/parallax_preview.tscn`.
+- Tests: continuidad exacta de extremos de segmentos, resultados negativos y positivos, número acotado de nodos, reconstrucción de segmentos anteriores y suavizado de cámara.
+- Limitaciones: el 2D infinito actual construye siluetas en tiempo real y no genera colisiones físicas ni exporta mapas infinitos (que no cabrían en PNG). Queda pendiente incorporar decoraciones temáticas y exportación de una región finita del mundo 2D.
+- Estado: cambios publicados directamente en `main` con `[skip ci]`; ejecutar pruebas en Godot 4.7 antes de dar por validada la renderización.

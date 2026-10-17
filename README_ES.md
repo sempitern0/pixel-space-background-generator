@@ -192,3 +192,18 @@ La vista previa automática ahora distingue **modificaciones estructurales** (ca
 **Exportación:** `await generator.export_parallax_bundle("user://space_pack", "nivel_01")` guarda un PNG compuesto, cinco PNG de capas (background, dust, nebula, stars y planets) y un archivo `nivel_01_manifest.json` con semilla, resolución, opciones visuales y factores de profundidad. Admite destinos `user://` y `res://`, y necesita un renderer activo. **Importante:** el PNG de estrellas está aplanado y pierde los factores de profundidad individuales; para reproducirlos exactamente se debe reinstanciar el generador con los parámetros y la semilla guardados.
 
 **Prueba de cámara:** abre `demo/parallax_preview.tscn` y ejecuta la escena con F6. Una `Camera2D` alimenta el desplazamiento de las capas; el fondo y la interfaz están fijados a `CanvasLayer` para aislar los efectos del parallax. Puedes observar el movimiento automático, conducir con flechas/WASD, pausar con Espacio, reiniciar con R, variar velocidad y amplitud y pulsar **Export bundle** para guardar la escena. Es una validación visual de desplazamiento, no una medición de FPS.
+
+## Dos modos de paralaje: profundidad 3D simulada y scroll 2D infinito
+
+**Profundidad simulada:** abre `demo/parallax_preview.tscn` y ejecútala con F6. Los planos de estrellas, planetas, polvo y nebulosas recrean profundidad sin utilizar un mundo 3D real. `star_depth_curve` modifica la distribución de velocidades (1 por defecto); `star_depth_size` añade pistas de tamaño según profundidad (0 conserva el aspecto anterior). Para suavizar movimientos de cámara, usa `parallax_follow_rate` y `follow_parallax_target(camera.global_position, delta)`, que aplica interpolación exponencial independiente del framerate. `set_parallax_offset()` permanece disponible para desplazamiento inmediato y exportación precisa.
+
+**Plataformeros / scroll lateral:** abre `demo/infinite_parallax_preview.tscn` (F6). `SpaceInfiniteParallax` ofrece tres capas de paisajes procedurales continuos con perfiles de cordilleras alienígenas, dunas o siluetas de asteroides. Genera y recicla segmentos próximos a la cámara, incluso al retroceder o avanzar por coordenadas negativas; no se repite una imagen fija. Las capas avanzan a velocidades independientes `background_speed`, `midground_speed` y `foreground_speed`. Los bordes comparten los mismos valores de muestreo mundial y evitan discontinuidades geométricas. Es decoración del fondo, no terreno de colisión.
+
+```gdscript
+var fondo := SpaceInfiniteParallax.new()
+add_child(fondo)
+fondo.configure(2026, 512, 360, 0)
+fondo.update_camera(camera.global_position, get_viewport_rect().size.x)
+```
+
+Puedes definir `chunk_width`, `layer_height`, `buffer_chunks`, los colores, el preset y la velocidad de cada plano. En la demo se prueba con flechas izquierda/derecha, Espacio para alternar movimiento automático, R para volver al origen, selector de escenario y velocidad. Ambos modos son independientes: no se alteran por defecto los fondos o las exportaciones existentes. Falta validar gráficamente en Godot 4.7.

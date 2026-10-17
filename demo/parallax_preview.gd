@@ -34,6 +34,9 @@ func _ready() -> void:
 	generator.fixed_amount_of_stars = 100
 	generator.fixed_amount_of_planets = 3
 	generator.parallax_enabled = true
+	generator.star_depth_curve = 1.7
+	generator.star_depth_size = 0.55
+	generator.parallax_follow_rate = 8.0
 	generator.batched_stars = true
 	generator.procedural_palette_enabled = true
 	generator.mixed_planet_surfaces = true
@@ -106,7 +109,7 @@ func _process(delta: float) -> void:
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	_manual += direction * delta * speed
 	camera.position = _manual + Vector2(sin(elapsed), cos(elapsed * 0.7) * 0.42) * amplitude if auto_move else _manual
-	generator.set_parallax_offset(camera.global_position)
+	generator.follow_parallax_target(camera.global_position, delta)
 	_update_caption()
 
 
