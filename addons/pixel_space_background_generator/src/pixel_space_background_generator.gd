@@ -14,6 +14,23 @@ const DefaultBackgroundColor: Color = Color("171711")
 @export_range(0.0, 1.0, 0.05) var star_cluster_strength: float = 0.0
 ## Minimum separation in pixels between planet centers (0 keeps the old behavior).
 @export_range(0.0, 256.0, 1.0) var planet_spacing: float = 0.0
+@export_range(0.0, 0.45, 0.01) var clear_zone_radius: float = 0.0
+@export var composition_focus: Vector2 = Vector2(0.5, 0.5)
+@export var planet_radius_spacing: bool = false
+@export_category("Color Direction")
+@export var procedural_palette_enabled: bool = false
+@export var color_harmony: SpaceColorTheory.Harmony = SpaceColorTheory.Harmony.AUTO
+@export var space_atmosphere: SpaceColorTheory.Atmosphere = SpaceColorTheory.Atmosphere.DEEP_SPACE
+@export_range(3, 16, 1) var palette_color_count: int = 8
+@export_category("Depth")
+@export var parallax_enabled: bool = false
+@export_range(0.0, 2.0, 0.05) var far_star_factor: float = 0.12
+@export_range(0.0, 2.0, 0.05) var near_star_factor: float = 0.65
+@export_range(0.0, 2.0, 0.05) var planet_parallax_factor: float = 0.85
+var _active_scheme: ColorGradient
+var _parallax_offset: Vector2 = Vector2.ZERO
+var _star_origin: Dictionary = {}
+var _planet_origin: Dictionary = {}
 var last_seed: int = 0
 var rng := RandomNumberGenerator.new()
 var _prepared: bool = false
@@ -173,6 +190,9 @@ func generate_new() -> void:
 	else:
 		last_seed = manual_seed
 	rng.seed = last_seed
+	_active_scheme = SpaceColorTheory.generate(last_seed, color_harmony, space_atmosphere, palette_color_count) if procedural_palette_enabled else current_color_scheme
+	_star_origin.clear()
+	_planet_origin.clear()
 	aspect = _calculate_aspect()
 	change_background_color(background_color)
 	stars_container.visible = display_stars
@@ -214,7 +234,7 @@ func _create_stars_dust() -> void:
 		stars_dust.material.set_shader_parameter("uv_correct", aspect)
 		stars_dust.material.set_shader_parameter("should_tile", tiled)
 		stars_dust.material.set_shader_parameter("reduce_background", reduce_background)
-		stars_dust.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+		stars_dust.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
 
 
 func _create_stars() -> void:
@@ -239,6 +259,11 @@ func _create_star() -> void:
 		place_position = Vector2(int(rng.randf_range(clampf(tile_offset, 0.0, size.x * 0.5), size.x - clampf(tile_offset, 0.0, size.x * 0.5))), int(rng.randf_range(clampf(tile_offset, 0.0, size.y * 0.5), size.y - clampf(tile_offset, 0.0, size.y * 0.5))))
 	else:
 		place_position = Vector2(int(rng.randf_range(0, size.x)), int(rng.randf_range(0, size.y)))
+	if clear_zone_radius > 0.0:
+		for clearance_try in 16:
+			if SpaceComposition.outside_clear_zone(place_position, size, composition_focus, clear_zone_radius):
+				break
+			place_position = Vector2(int(rng.randf_range(0.0, size.x)), int(rng.randf_range(0.0, size.y)))
 	if star_cluster_strength > 0.0:
 		# Rejection sampling: bounded attempts and deterministic with a fixed seed.
 		# A wide low-frequency wave yields regions of low and high stellar density.
@@ -249,14 +274,25 @@ func _create_star() -> void:
 				break
 			candidate = Vector2(rng.randf_range(0.0, maxf(0.0, size.x)), rng.randf_range(0.0, maxf(0.0, size.y)))
 		place_position = Vector2(int(candidate.x), int(candidate.y))
+	if clear_zone_radius > 0.0 and not SpaceComposition.outside_clear_zone(place_position, size, composition_focus, clear_zone_radius):
+		for clearance_try in 16:
+			var replacement: Vector2 = Vector2(rng.randf_range(0.0, size.x), rng.randf_range(0.0, size.y))
+			if SpaceComposition.outside_clear_zone(replacement, size, composition_focus, clear_zone_radius):
+				place_position = replacement
+				break
+		if not SpaceComposition.outside_clear_zone(place_position, size, composition_focus, clear_zone_radius):
+			return
 
 	
 	var background_star = BackgroundStarScene.instantiate()
 	background_star.position = place_position
 	background_star.configure(rng)
-	background_star.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+	background_star.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
 	stars_container.add_child(background_star)
 	star_objects.append(background_star)
+	_star_origin[background_star] = place_position
+	if parallax_enabled:
+		background_star.position = place_position - _parallax_offset * SpaceComposition.star_depth(last_seed, star_objects.size() - 1, far_star_factor, near_star_factor)
 	
 
 
@@ -276,7 +312,7 @@ func _create_nebulae() -> void:
 	nebulae.material.set_shader_parameter("uv_correct", aspect)
 	nebulae.material.set_shader_parameter("should_tile", tiled)
 	nebulae.material.set_shader_parameter("reduce_background", reduce_background)
-	nebulae.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+	nebulae.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
 	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
 	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
 	
@@ -302,24 +338,34 @@ func _create_planet() -> void:
 	var min_size = min(size.x, size.y)
 	var planet_scale = Vector2.ONE * (rng.randf_range(0.2, 0.7) * rng.randf_range(0.5, 1.0) * min_size * 0.005)
 	var place_position: Vector2
-	
+	var planet_radius: float = planet_scale.x * 50.0
+
 	if (tiled):
 		var planet_offset: float = planet_scale.x * 100.0 * 0.5
 		place_position = Vector2(int(rng.randf_range(planet_offset, size.x - planet_offset)), int(rng.randf_range(planet_offset, size.y - planet_offset)))
 	else:
 		place_position = Vector2(int(rng.randf_range(0, size.x)), int(rng.randf_range(0, size.y)))
 	
-	if planet_spacing > 0.0:
+	if planet_spacing > 0.0 or planet_radius_spacing or clear_zone_radius > 0.0:
 		var accepted: bool = false
-		for attempt in 24:
+		for attempt in 40:
 			accepted = true
-			for existing in planet_objects:
-				if existing.position.distance_to(place_position) < planet_spacing:
-					accepted = false
-					break
+			if planet_radius_spacing:
+				var current_planets: Array[Dictionary] = []
+				for existing in planet_objects:
+					current_planets.append({"center": _planet_origin[existing], "radius": float(existing.scale.x) * 50.0})
+				accepted = SpaceComposition.can_place_planet(place_position, planet_radius, current_planets, planet_spacing)
+			else:
+				for existing in planet_objects:
+					if existing.position.distance_to(place_position) < planet_spacing:
+						accepted = false
+						break
+			if clear_zone_radius > 0.0 and not SpaceComposition.outside_clear_zone(place_position, size, composition_focus, clear_zone_radius):
+				accepted = false
 			if accepted:
 				break
-			place_position = Vector2(int(rng.randf_range(0.0, maxf(0.0, size.x))), int(rng.randf_range(0.0, maxf(0.0, size.y))))
+			var sampled: Vector2 = Vector2(rng.randf_range(0.0, maxf(1.0, size.x)), rng.randf_range(0.0, maxf(1.0, size.y)))
+			place_position = SpaceComposition.constrain_center(sampled, planet_radius, size) if planet_radius_spacing else sampled
 		if not accepted:
 			return
 	var planet = BackgroundPlanetScene.instantiate()
@@ -327,11 +373,14 @@ func _create_planet() -> void:
 	planet.scale = planet_scale
 	planet.position = place_position
 	planet.configure(rng)
-	planet.material.set_shader_parameter("colorscheme", current_color_scheme.gradient)
+	planet.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
 	planet.material.set_shader_parameter("surface_type", clampi(planet_surface, 0, 3))
 	planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
 	planet_container.add_child(planet)
 	planet_objects.append(planet)
+	_planet_origin[planet] = place_position
+	if parallax_enabled:
+		planet.position = place_position - _parallax_offset * planet_parallax_factor
 	
 	
 
@@ -405,6 +454,18 @@ func _export_as_image() -> Error:
 	elif Engine.is_editor_hint():
 		EditorInterface.get_resource_filesystem().scan()
 	return error
+
+
+## Updates sprite positions without regenerating the seed or shaders.
+func set_parallax_offset(camera_position: Vector2) -> void:
+	_parallax_offset = camera_position
+	if not parallax_enabled:
+		return
+	for index in star_objects.size():
+		var star: Node2D = star_objects[index]
+		star.position = _star_origin[star] - camera_position * SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor)
+	for planet in planet_objects:
+		planet.position = _planet_origin[planet] - camera_position * planet_parallax_factor
 
 
 func on_resized() -> void:
