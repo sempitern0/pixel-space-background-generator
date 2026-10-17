@@ -47,9 +47,11 @@ func _ready() -> void:
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_child(stage)
 	generator = BACKGROUND_SCENE.instantiate()
+	generator.auto_regenerate = false # The laboratory applies complete presets in one batch.
 	generator.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stage.add_child(generator)
 	picker.item_selected.connect(_select_preset)
+	seed_input.value_changed.connect(func(_value: float) -> void: _generate())
 	generate.pressed.connect(_generate)
 	export_button.pressed.connect(_export_image)
 	composition_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())

@@ -158,3 +158,9 @@ func _process(_delta: float) -> void:
 ```
 
 En `demo/space_lab.tscn` puedes activar **Art-directed layout** y **Color harmony** para comparar con el mismo seed. El shader de nebulosas también reutiliza un cálculo idéntico de ruido para reducir el trabajo gráfico sin cambiar deliberadamente su aspecto.
+
+## Vista previa automática de parámetros
+
+**Auto Regenerate** está activado por defecto. Cambiar en el Inspector la composición, paletas, superficies planetarias, nebulosas, número de estrellas, mosaico o parámetros de paralaje actualiza el fondo tras una pausa breve (~140 ms). Varios cambios seguidos se agrupan para no reconstruir la escena con cada evento del deslizador. La actualización **conserva la semilla actual**, incluso con **Randomize Seed** activado. Utiliza **Generate New** cuando quieras otra composición aleatoria; `regenerate_current()` vuelve a dibujar la semilla seleccionada. Si Randomize Seed está desactivado, modificar `manual_seed` también actualiza el fondo. El color de fondo se aplica directamente.
+
+Para modificar muchos parámetros desde código sin regeneraciones intermedias, ajusta `auto_regenerate = false`, configura los valores, llama `regenerate_current()` y vuelve a activar la actualización automática si lo necesitas. La demo usa esta estrategia para aplicar presets y ahora actualiza la escena al modificar su campo de semilla. La generación de una escena compleja sigue siendo síncrona, pero los deslizadores ya no disparan reconstrucciones por cada valor intermedio.

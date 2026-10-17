@@ -52,6 +52,34 @@ func run() -> void:
 	g.manual_seed = g.last_seed
 	g.generate_new()
 	assert(snapshot(g) == random_result, "last_seed must reproduce a random result")
+	# Inspector-like parameter changes should coalesce into one deterministic
+	# refresh and must not reroll a random seed.
+	g.randomize_seed = false
+	g.manual_seed = 42
+	g.generate_new()
+	var updates_seed: int = g.last_seed
+	g.nebula_filaments = 0.25
+	g.nebula_coverage = 0.65
+	g.planet_surface = 1
+	await create_timer(0.25).timeout
+	assert(g.last_seed == updates_seed)
+	assert(g.nebulae.material.get_shader_parameter("filament_strength") == 0.25)
+	assert(g.nebulae.material.get_shader_parameter("cloud_coverage") == 0.65)
+	g.randomize_seed = true
+	g.generate_new()
+	var held_seed: int = g.last_seed
+	g.star_cluster_strength = 0.33
+	await create_timer(0.25).timeout
+	assert(g.last_seed == held_seed, "Automatic refresh unexpectedly rerolled the seed")
+	g.auto_regenerate = false
+	g.nebula_filaments = 0.70
+	await create_timer(0.25).timeout
+	assert(g.nebulae.material.get_shader_parameter("filament_strength") == 0.25)
+	g.regenerate_current()
+	assert(g.nebulae.material.get_shader_parameter("filament_strength") == 0.70)
+	assert(g.last_seed == held_seed)
+	g.auto_regenerate = true
+	g.randomize_seed = false
 	# New optional art direction is deterministic, has its own gradient and
 	# avoids a central gameplay area without mutating the shared preset.
 	var harmonic: ColorGradient = SpaceColorTheory.generate(42, SpaceColorTheory.Harmony.AUTO, SpaceColorTheory.Atmosphere.COLD_NEBULA)

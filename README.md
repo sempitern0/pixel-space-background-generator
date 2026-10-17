@@ -151,3 +151,9 @@ func _process(_delta: float) -> void:
 ```
 
 The **Art-directed layout** and **Color harmony** checkboxes in `demo/space_lab.tscn` let you compare the legacy scene with the new settings at the same seed. The nebula shader also reuses an identical cloud-noise result to reduce redundant GPU work, without intentionally changing its appearance.
+
+## Live parameter preview
+
+**Auto Regenerate** is enabled by default. Changes in the Inspector to composition, palette, planet surfaces, nebulae, star counts, tiling or parallax configuration automatically refresh the result after a brief (~140 ms) pause. Multiple edits are coalesced, preventing a new full render for every slider event. A refresh **keeps the selected seed**, even when **Randomize Seed** is enabled. Use **Generate New** only when you want another random composition; `regenerate_current()` re-renders the same seed on demand. Changing `manual_seed` while Randomize Seed is disabled selects that seed automatically. Background color still updates directly.
+
+For batch editing from code, temporarily set `auto_regenerate = false`, assign the properties, call `regenerate_current()`, then optionally re-enable it. The composition laboratory uses this pattern for presets; its seed input now regenerates automatically. Large scenes still incur synchronous processing during each refresh, but dragging controls does not repeatedly rebuild intermediate states.
