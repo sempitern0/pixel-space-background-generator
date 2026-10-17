@@ -32,6 +32,10 @@ func _ready() -> void:
 	var generate := Button.new()
 	generate.text = "Generate"
 	controls.add_child(generate)
+	var layers_button := Button.new()
+	layers_button.text = "Export Layers"
+	controls.add_child(layers_button)
+	layers_button.pressed.connect(_export_layers)
 	var export_button := Button.new()
 	export_button.text = "Export PNG"
 	controls.add_child(export_button)
@@ -89,3 +93,9 @@ func _export_image() -> void:
 	var path := "user://space_%d.png" % int(seed_input.value)
 	var error: Error = await generator.export_png(path)
 	status.text = ProjectSettings.globalize_path(path) if error == OK else error_string(error)
+
+
+func _export_layers() -> void:
+	var target: String = "user://space_layers_%d" % int(seed_input.value)
+	var error: Error = await generator.export_layers(target, "background")
+	status.text = ProjectSettings.globalize_path(target) if error == OK else error_string(error)

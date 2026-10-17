@@ -80,6 +80,27 @@ func run() -> void:
 	assert(g.last_seed == held_seed)
 	g.auto_regenerate = true
 	g.randomize_seed = false
+	# Mixed surfaces do not advance the generator RNG or modify other layers.
+	assert(SpaceComposition.surface_for_planet(42, 0) == 2)
+	assert(SpaceComposition.surface_for_planet(42, 1) == 3)
+	g.mixed_planet_surfaces = true
+	g.fixed_amount_of_planets = 4
+	g.manual_seed = 42
+	g.generate_new()
+	var mixed_snapshot: Array = snapshot(g)
+	for i in g.planet_objects.size():
+		assert(int(g.planet_objects[i].material.get_shader_parameter("surface_type")) == SpaceComposition.surface_for_planet(42, i))
+	g.generate_new()
+	assert(snapshot(g) == mixed_snapshot)
+	g.parallax_enabled = true
+	g.set_parallax_offset(Vector2(64, 32))
+	assert(g.nebulae.material.get_shader_parameter("parallax_uv_offset") != Vector2.ZERO)
+	assert(g.stars_dust.material.get_shader_parameter("parallax_uv_offset") != Vector2.ZERO)
+	g.parallax_enabled = false
+	g.regenerate_current()
+	assert(g.nebulae.material.get_shader_parameter("parallax_uv_offset") == Vector2.ZERO)
+	assert(g.stars_dust.material.get_shader_parameter("parallax_uv_offset") == Vector2.ZERO)
+	g.mixed_planet_surfaces = false
 	# New optional art direction is deterministic, has its own gradient and
 	# avoids a central gameplay area without mutating the shared preset.
 	var harmonic: ColorGradient = SpaceColorTheory.generate(42, SpaceColorTheory.Harmony.AUTO, SpaceColorTheory.Atmosphere.COLD_NEBULA)
@@ -182,6 +203,11 @@ func run() -> void:
 				colors[result.get_pixel(x, y)] = true
 		assert(colors.size() > 8, "Export must contain generated artwork, not a flat/empty image")
 		assert(not colors.has(Color.MAGENTA), "Host UI leaked into export")
+		assert(await g.export_layers("user://space-layers", "test") == OK)
+		for layer_name in ["background", "dust", "nebula", "stars", "planets"]:
+			var layer_path: String = "user://space-layers/test_%s.png" % layer_name
+			assert(FileAccess.file_exists(layer_path))
+			assert(Image.load_from_file(layer_path).get_size() == Vector2i(320, 180))
 		# A transparent empty background should export transparent pixels.
 		g.display_stars = false
 		g.display_stars_dust = false
