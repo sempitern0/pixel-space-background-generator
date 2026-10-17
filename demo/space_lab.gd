@@ -10,6 +10,8 @@ var generator: PixelSpaceBackgroundGenerator
 var picker: OptionButton
 var seed_input: SpinBox
 var composition_toggle: CheckBox
+var batch_toggle: CheckBox
+var nebula_picker: OptionButton
 var palette_toggle: CheckBox
 var status: Label
 
@@ -45,6 +47,13 @@ func _ready() -> void:
 	palette_toggle = CheckBox.new()
 	palette_toggle.text = "Color harmony"
 	controls.add_child(palette_toggle)
+	batch_toggle = CheckBox.new()
+	batch_toggle.text = "Batch stars"
+	controls.add_child(batch_toggle)
+	nebula_picker = OptionButton.new()
+	for label in ["Nebula: Classic", "Wisps", "Veils", "Cloud banks", "Void pockets"]:
+		nebula_picker.add_item(label)
+	controls.add_child(nebula_picker)
 	status = Label.new()
 	layout.add_child(status)
 	var stage := Control.new()
@@ -60,6 +69,8 @@ func _ready() -> void:
 	export_button.pressed.connect(_export_image)
 	composition_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())
 	palette_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())
+	batch_toggle.toggled.connect(func(_enabled: bool) -> void: _generate())
+	nebula_picker.item_selected.connect(func(_index: int) -> void: _generate())
 	_select_preset(0)
 
 
@@ -82,11 +93,13 @@ func _generate() -> void:
 	generator.procedural_palette_enabled = palette_toggle.button_pressed
 	generator.color_harmony = SpaceColorTheory.Harmony.AUTO
 	generator.space_atmosphere = SpaceColorTheory.Atmosphere.COLD_NEBULA if picker.selected == 1 else (SpaceColorTheory.Atmosphere.EERIE_VOID if picker.selected == 2 else SpaceColorTheory.Atmosphere.DEEP_SPACE)
+	generator.batched_stars = batch_toggle.button_pressed
+	generator.nebula_profile = nebula_picker.selected
 	generator.planet_surface = int(preset["surface"])
 	generator.nebula_filaments = float(preset["filaments"])
 	generator.nebula_coverage = float(preset["coverage"])
 	generator.generate_new()
-	status.text = "Seed %d · Stars %d · Planets %d" % [generator.manual_seed, generator.star_objects.size(), generator.planet_objects.size()]
+	status.text = "Seed %d · Stars %d · Planets %d" % [generator.manual_seed, generator.get_generated_star_count(), generator.planet_objects.size()]
 
 
 func _export_image() -> void:

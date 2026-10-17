@@ -80,6 +80,44 @@ func run() -> void:
 	assert(g.last_seed == held_seed)
 	g.auto_regenerate = true
 	g.randomize_seed = false
+	# A MultiMesh reduces SceneTree nodes but keeps star count, glyph
+	# selection and downstream RNG decisions stable.
+	g.auto_regenerate = false
+	g.randomize_seed = false
+	g.manual_seed = 42
+	g.fixed_amount_of_stars = 96
+	g.fixed_amount_of_planets = 3
+	g.batched_stars = false
+	g.generate_new()
+	var classical_planets: Array = []
+	for planet in g.planet_objects:
+		classical_planets.append([planet.position, planet.scale, planet.material.get_shader_parameter("seed")])
+	var classic_glyphs: PackedInt32Array = PackedInt32Array()
+	for star in g.star_objects:
+		classic_glyphs.append(roundi((star.texture.region.position.x - 2.0) / 25.0))
+	g.batched_stars = true
+	g.generate_new()
+	assert(g.get_generated_star_count() == 96)
+	assert(g.star_objects.size() == 0)
+	assert(g.stars_container.get_child_count() == 1)
+	assert(g._batched_types == classic_glyphs)
+	for index in g.planet_objects.size():
+		var planet = g.planet_objects[index]
+		assert([planet.position, planet.scale, planet.material.get_shader_parameter("seed")] == classical_planets[index])
+	g.parallax_enabled = true
+	g.set_parallax_offset(Vector2(25, 10))
+	assert(g._star_batch.material.get_shader_parameter("camera_offset") == Vector2(25, 10))
+	g.set_parallax_offset(Vector2.ZERO)
+	g.nebula_profile = 3
+	g.regenerate_current()
+	assert(g.nebulae.material.get_shader_parameter("nebula_profile") == 3)
+	g.batched_stars = false
+	g.nebula_profile = 0
+	g.parallax_enabled = false
+	g.regenerate_current()
+	assert(g.star_objects.size() == 96)
+	assert(g.nebulae.material.get_shader_parameter("nebula_profile") == 0)
+	g.auto_regenerate = true
 	# Mixed surfaces do not advance the generator RNG or modify other layers.
 	assert(SpaceComposition.surface_for_planet(42, 0) == 2)
 	assert(SpaceComposition.surface_for_planet(42, 1) == 3)
