@@ -256,6 +256,13 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 		if value != nebula_filaments:
 			nebula_filaments = value
 			_update()
+## Classic retains the previous shader. Others bias the existing fields
+## without introducing extra FBM passes.
+@export_enum("Classic", "Wisps", "Veils", "Cloud banks", "Void pockets") var nebula_profile: int = 0:
+	set(value):
+		if value != nebula_profile:
+			nebula_profile = value
+			_update()
 @export_range(0.0, 1.0, 0.05) var nebula_coverage: float = 0.5:
 	set(value):
 		if value != nebula_coverage:
@@ -526,6 +533,7 @@ func _create_nebulae() -> void:
 	nebulae.material.set_shader_parameter("colorscheme", _active_scheme.gradient)
 	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
 	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
+	nebulae.material.set_shader_parameter("nebula_profile", clampi(nebula_profile, 0, 4))
 	
 #endregion
 

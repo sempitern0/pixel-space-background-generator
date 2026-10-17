@@ -14,6 +14,8 @@ uniform vec2 uv_correct = vec2(1.0);
 uniform vec2 parallax_uv_offset = vec2(0.0);
 uniform float filament_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.5;
+// Classic 0 retains the original output. Alternate shapes reuse sampled noise.
+uniform int nebula_profile : hint_range(0, 4) = 0;
 
 float rand(vec2 coord, float tilesize) {
 	if (should_tile) {
@@ -103,6 +105,15 @@ void fragment() {
 	float n_lerp = n2 * n;
 	float n_dust = n; // The two expressions are identical; reuse the existing FBM.
 	float n_dust_lerp = n_dust * n_lerp;
+	if (nebula_profile == 1) { // thin atmospheric wisps
+		n_dust_lerp *= smoothstep(0.25, 0.66, abs(n - n2) * 2.0);
+	} else if (nebula_profile == 2) { // broad translucent veils
+		n_dust_lerp = mix(n_dust_lerp, n * 0.50, 0.65);
+	} else if (nebula_profile == 3) { // dense continuous banks
+		n_dust_lerp = mix(n_dust_lerp, n2 * n2, 0.58);
+	} else if (nebula_profile == 4) { // dark cavities and ring-like boundaries
+		n_dust_lerp *= smoothstep(0.15, 0.42, abs(n2 - 0.50));
+	}
 	if (filament_strength > 0.0) {
 		// Domain-warped filaments mix with the original soft cloud field.
 		float turbulence = fbm(uv * size * 2.0 + vec2(4.1, 9.3), size * 2.0);
@@ -145,5 +156,14 @@ void fragment() {
 
 	// Keep the historical alpha mask at 0.5 coverage, retaining old seeds.
 	float threshold_shift = (0.5 - cloud_coverage) * 0.26;
+	if (nebula_profile == 1) {
+		threshold_shift += 0.045;
+	} else if (nebula_profile == 2) {
+		threshold_shift -= 0.025;
+	} else if (nebula_profile == 3) {
+		threshold_shift -= 0.060;
+	} else if (nebula_profile == 4) {
+		threshold_shift += 0.025;
+	}
 	COLOR = vec4(col, step(n2, (should_tile ? 0.315 : 0.115 + d) - threshold_shift));
 }
