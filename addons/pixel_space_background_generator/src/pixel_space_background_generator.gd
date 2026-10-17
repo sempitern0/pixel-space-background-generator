@@ -832,6 +832,74 @@ func _capture_layer(source: CanvasItem) -> Image:
 	return result
 
 
+## Production bundle: current composite, independent layers and a manifest.
+## Captures do not reroll any seeds or change the displayed scene.
+## Individual star speeds are preserved as metadata; the stars PNG is one
+## flattened image, not a lossless split of all per-star speeds.
+func export_parallax_bundle(directory: String, prefix: String = "space") -> Error:
+	if prefix.is_empty() or prefix.contains("/") or prefix.contains("\\") or prefix.contains(".."):
+		return ERR_INVALID_PARAMETER
+	if not directory.begins_with("user://") and not directory.begins_with("res://"):
+		return ERR_INVALID_PARAMETER
+	if not _prepared or not is_inside_tree():
+		return ERR_UNCONFIGURED
+	if DisplayServer.get_name() == "headless":
+		return ERR_UNAVAILABLE
+	if size.x < 1.0 or size.y < 1.0 or size.x > 4096.0 or size.y > 4096.0:
+		return ERR_INVALID_PARAMETER
+	var directory_error: Error = DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+	if directory_error != OK:
+		return directory_error
+	var combined: String = directory.path_join(prefix + ".png")
+	var saved: Error = await export_png(combined)
+	if saved != OK:
+		return saved
+	saved = await export_layers(directory, prefix)
+	if saved != OK:
+		return saved
+	var layer_names: Array[String] = ["background", "dust", "nebula", "stars", "planets"]
+	var files: Dictionary = {"composite": prefix + ".png"}
+	for layer_name in layer_names:
+		files[layer_name] = "%s_%s.png" % [prefix, layer_name]
+	var manifest: Dictionary = {
+		"schema_version": 1,
+		"size": [int(size.x), int(size.y)],
+		"seed": last_seed,
+		"files": files,
+		"parallax": {
+			"enabled": parallax_enabled,
+			"camera_offset": [_parallax_offset.x, _parallax_offset.y],
+			"dust": dust_parallax_factor,
+			"nebula": nebula_parallax_factor,
+			"far_stars": far_star_factor,
+			"near_stars": near_star_factor,
+			"planets": planet_parallax_factor,
+			"flattened_stars_note": "Individual star depths require scene recreation from seed."
+		},
+		"rendering": {"batched_stars": batched_stars, "star_count": generated_star_count},
+		"visual": {
+			"planet_surface": planet_surface,
+			"mixed_planet_surfaces": mixed_planet_surfaces,
+			"planet_organic_strength": planet_organic_strength,
+			"planet_rim_strength": planet_rim_strength,
+			"planet_size_variation": planet_size_variation,
+			"nebula_profile": nebula_profile,
+			"nebula_organic_strength": nebula_organic_strength,
+			"nebula_flow_angle": nebula_flow_angle,
+			"nebula_coverage": nebula_coverage,
+			"procedural_palette_enabled": procedural_palette_enabled,
+			"color_harmony": int(color_harmony),
+			"space_atmosphere": int(space_atmosphere)
+		}
+	}
+	var output := FileAccess.open(directory.path_join(prefix + "_manifest.json"), FileAccess.WRITE)
+	if output == null:
+		return FileAccess.get_open_error()
+	output.store_string(JSON.stringify(manifest, "\t"))
+	output.close()
+	return OK
+
+
 func _export_as_image() -> Error:
 	var error := DirAccess.make_dir_recursive_absolute(export_path)
 	if error == OK:
