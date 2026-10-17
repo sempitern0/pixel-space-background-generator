@@ -12,6 +12,11 @@ uniform bool reduce_background = false;
 uniform vec2 uv_correct = vec2(1.0);
 // Pixel-space layer scroll; zero reproduces the original static shader.
 uniform vec2 parallax_uv_offset = vec2(0.0);
+ // Streaming mode samples one continuous noise field in signed world pixels.
+ // Default false preserves all legacy sprites, renders and seed results.
+ uniform bool streaming_mode = false;
+ uniform vec2 streaming_origin = vec2(0.0);
+ uniform vec2 streaming_region_size = vec2(512.0, 720.0);
 uniform float filament_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.5;
 // Classic 0 retains the original output. Alternate shapes reuse sampled noise.
@@ -94,12 +99,15 @@ float cloud_alpha(vec2 uv, float tilesize) {
 void fragment() {
 	// pixelizing and dithering
 	vec2 uv = floor((UV + parallax_uv_offset) * pixels) / pixels;
+	if (streaming_mode) {
+		uv = floor((streaming_origin + UV * streaming_region_size) / 3.0) / 512.0;
+	}
 
 	// distance from center
-	float d =  distance(uv, vec2(0.5)) * 0.4;
+	float d = streaming_mode ? 0.22 : distance(uv, vec2(0.5)) * 0.4;
 
-	uv *= uv_correct;
-	bool dith = dither(uv, UV);
+	uv *= streaming_mode ? vec2(1.0) : uv_correct;
+	bool dith = dither(uv, streaming_mode ? uv : UV);
 
 	// noise for the inside of the nebulae
 	float n = cloud_alpha(uv * size, size);
