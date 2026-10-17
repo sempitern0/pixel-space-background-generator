@@ -19,7 +19,6 @@ extends Node2D
 
 var _camera_position: Vector2 = Vector2.ZERO
 var _viewport_size: Vector2 = Vector2(960, 540)
-var _previous_sky_rect: Rect2 = Rect2()
 var _layers: Array[Node2D] = []
 var _active: Array[Dictionary] = []
 
@@ -57,15 +56,16 @@ func _refresh_all() -> void:
 ## Camera in world pixels, optional viewport height for vertical shooters.
 func update_camera(camera_position: Vector2, viewport_width: float, viewport_height: float = 0.0) -> void:
 	_camera_position = camera_position
-	_viewport_size = Vector2(maxf(1.0, viewport_width), maxf(1.0, viewport_height if viewport_height > 0.0 else float(layer_height)))
+	var next_viewport_size := Vector2(maxf(1.0, viewport_width), maxf(1.0, viewport_height if viewport_height > 0.0 else float(layer_height)))
+	# This Node2D is attached to a screen-space Control in the preview.
+	# The camera offset moves only the three child layers, not their parent.
+	# Never draw the sky at the camera's world coordinates: after long
+	# travel that moves the rectangle off screen, exposing viewport gray.
+	if next_viewport_size != _viewport_size:
+		_viewport_size = next_viewport_size
+		queue_redraw()
 	if _layers.is_empty():
 		return
-	# A local background rectangle follows the camera; unlike the old
-	# fixed rectangle, it never runs out after travelling a long distance.
-	var needed := Rect2(camera_position - Vector2.ONE * 4096.0, _viewport_size + Vector2.ONE * 8192.0)
-	if not _previous_sky_rect.has_point(camera_position) or not _previous_sky_rect.encloses(needed):
-		_previous_sky_rect = needed.grow(4096.0)
-		queue_redraw()
 	var side: int = maxi(128, chunk_width)
 	for index in _layers.size():
 		var speed: float = get_layer_speed(index)
@@ -130,5 +130,11 @@ func get_chunk_signature(layer_index: int, chunk_id: int, y: int = 0) -> PackedI
 	return output
 
 
+## The flat sky is always the same screen-aligned viewport rectangle.
+## Infinite scrolling applies to the child content, never to this backdrop.
+func get_sky_rect() -> Rect2:
+	return Rect2(Vector2.ZERO, _viewport_size)
+
+
 func _draw() -> void:
-	draw_rect(_previous_sky_rect, sky_color)
+	draw_rect(get_sky_rect(), sky_color)

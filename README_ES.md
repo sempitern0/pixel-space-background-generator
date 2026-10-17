@@ -220,3 +220,7 @@ fondo.update_camera(camera.global_position, viewport_size.x, viewport_size.y)
 ```
 
 Los objetos son decorativos, sin física ni enemigos. La exportación de mundo infinito no equivale a un PNG finito. Las siluetas montañosas anteriores dejan de formar parte de este modo. **Validación visual en Godot 4.7 pendiente**.
+
+## Corrección: fondo del viewport al avanzar en el modo infinito
+
+El cielo está anclado a las coordenadas **locales de la vista**; solo las capas con estrellas, planetas, polvo y nebulosas se desplazan con el avance. Así se evita que aparezca el gris de limpieza del viewport tras recorrer distancias grandes. No hace falta regenerar semillas ni configurar un color de limpieza de Godot. Comprueba en `demo/infinite_parallax_preview.tscn` el desplazamiento hasta X=14.415 y más allá, el retroceso a coordenadas negativas y el cambio de tamaño de ventana. `get_sky_rect()` permite verificar en las pruebas que la cobertura sigue siendo `Rect2(Vector2.ZERO, viewport_size)`.

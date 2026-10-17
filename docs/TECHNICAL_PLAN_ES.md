@@ -107,3 +107,7 @@ Abrir repo `sempitern0/pixel-space-background-generator` en `main`, revisar comm
 ## Revisión: streaming espacial para shooters 2D
 
 Se sustituyen siluetas de montañas por capas decorativas con estrellas del atlas existente, planetas shader del generador, asteroides poligonales, escombros y campos de polvo y nebulosas con shader en coordenadas mundiales. La generación es reproducible por semilla, capa y celda firmada XY; se descargan las celdas fuera de ventana visible. La demo infinita mantiene el mismo nombre y añade desplazamiento vertical, cinco ambientes espaciales y controles de velocidad. El sistema anterior de terreno deja de estar disponible. Pendiente validar la renderización y el coste en Godot 4.7, especialmente el rendimiento de los shaders y recuento de draw calls.
+
+## Corrección de cielo infinito — 2026-10-17
+
+Bug confirmado a partir de captura en X≈14.415: el rectángulo del cielo se desplazaba utilizando la posición mundial de la cámara, aunque el nodo raíz está fijo a pantalla. Por ello se quedaba fuera de la vista y aparecía el fondo gris de Godot. Corregido: `SpaceInfiniteParallax.get_sky_rect()` devuelve siempre un rectángulo local desde `(0,0)` con dimensiones del viewport; sólo los hijos de parallax utilizan desplazamiento de mundo. El rectángulo se redibuja al redimensionar, no al avanzar. Prueba de regresión para X=14.415, ±80.000, cambio de tamaño y retorno al origen. Pendiente comprobar en Godot 4.7 desde el entorno del usuario.

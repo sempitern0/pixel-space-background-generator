@@ -213,3 +213,7 @@ backdrop.update_camera(camera.global_position, viewport_size.x, viewport_size.y)
 ```
 
 The assets are decorative and not physical gameplay entities. An infinite world cannot be exported into a finite PNG without specifying a capture range. Previous flat terrestrial silhouettes are retired from this mode. Godot 4.7 visual validation is still pending.
+
+## Fix: viewport clear color after long infinite scrolling
+
+The sky now stays fixed in **viewport-local coordinates** while streamed star/planet/debris layers move relative to the camera. This prevents Godot's gray clear color from appearing after long travel. There is no need to modify the project's clear color or reroll seeds. Check `demo/infinite_parallax_preview.tscn` at X=14,415 and beyond, negative coordinates and window resizing. The `get_sky_rect()` API lets tests verify that the sky covers `Rect2(Vector2.ZERO, viewport_size)` regardless of world travel.
