@@ -76,7 +76,7 @@ func update_camera(camera_position: Vector2, viewport_width: float) -> void:
 					[distant_color, middle_color, near_color][layer_index])
 				_layers[layer_index].add_child(chunk)
 				visible[chunk_id] = chunk
-		_layers[layer_index].position = Vector2(-layer_x + floorf(layer_x), 0.0)
+		_layers[layer_index].position = Vector2(-layer_x, 0.0)
 
 
 func get_layer_speed(index: int) -> float:
