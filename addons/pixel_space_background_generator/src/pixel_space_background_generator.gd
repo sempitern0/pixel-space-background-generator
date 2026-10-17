@@ -52,54 +52,54 @@ const DefaultBackgroundColor: Color = Color("171711")
 	set(value):
 		if value != procedural_palette_enabled:
 			procedural_palette_enabled = value
-			_update()
+			_update_visual()
 @export var color_harmony: SpaceColorTheory.Harmony = SpaceColorTheory.Harmony.AUTO:
 	set(value):
 		if value != color_harmony:
 			color_harmony = value
-			_update()
+			_update_visual()
 @export var space_atmosphere: SpaceColorTheory.Atmosphere = SpaceColorTheory.Atmosphere.DEEP_SPACE:
 	set(value):
 		if value != space_atmosphere:
 			space_atmosphere = value
-			_update()
+			_update_visual()
 @export_range(3, 16, 1) var palette_color_count: int = 8:
 	set(value):
 		if value != palette_color_count:
 			palette_color_count = value
-			_update()
+			_update_visual()
 @export_category("Depth")
 @export var parallax_enabled: bool = false:
 	set(value):
 		if value != parallax_enabled:
 			parallax_enabled = value
-			_update()
+			_update_visual()
 @export_range(0.0, 2.0, 0.05) var far_star_factor: float = 0.12:
 	set(value):
 		if value != far_star_factor:
 			far_star_factor = value
-			_update()
+			_update_visual()
 @export_range(0.0, 2.0, 0.05) var near_star_factor: float = 0.65:
 	set(value):
 		if value != near_star_factor:
 			near_star_factor = value
-			_update()
+			_update_visual()
 @export_range(0.0, 2.0, 0.05) var planet_parallax_factor: float = 0.85:
 	set(value):
 		if value != planet_parallax_factor:
 			planet_parallax_factor = value
-			_update()
+			_update_visual()
 ## Shader layers scroll independently from star sprites and planets.
 @export_range(0.0, 2.0, 0.05) var dust_parallax_factor: float = 0.06:
 	set(value):
 		if value != dust_parallax_factor:
 			dust_parallax_factor = value
-			_update()
+			_update_visual()
 @export_range(0.0, 2.0, 0.05) var nebula_parallax_factor: float = 0.10:
 	set(value):
 		if value != nebula_parallax_factor:
 			nebula_parallax_factor = value
-			_update()
+			_update_visual()
 var _active_scheme: ColorGradient
 var _parallax_offset: Vector2 = Vector2.ZERO
 var _star_origin: Dictionary = {}
@@ -116,6 +116,11 @@ var _update_serial: int = 0
 var _last_change_usec: int = 0
 var _has_generated: bool = false
 var _generating: bool = false
+var _visual_only_pending: bool = true
+## Last CPU duration (milliseconds) of an actual rebuild or material refresh.
+var last_generation_ms: float = 0.0
+var last_visual_refresh_ms: float = 0.0
+
 const AUTO_REFRESH_DELAY_USEC: int = 140000
 
 @export_category("Preview")
@@ -140,7 +145,7 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 	set(value):
 		if value != reduce_background:
 			reduce_background = value
-			_update()
+			_update_visual()
 @export var background_color: Color = DefaultBackgroundColor:
 	set(value):
 		if value != background_color:
@@ -150,17 +155,17 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 	set(value):
 		if value != current_color_scheme:
 			current_color_scheme = value
-			_update()
+			_update_visual()
 @export var show_stars_behind: bool = true:
 	set(value):
 		if value != show_stars_behind:
 			show_stars_behind = value
-			_update()
+			_update_visual()
 @export var show_planets_behind: bool = true:
 	set(value):
 		if value != show_planets_behind:
 			show_planets_behind = value
-			_update()
+			_update_visual()
 @export_category("Export")
 @export_dir var export_path: String = "res://space_backgrounds"
 @export_tool_button("Export Background", "Image") var export_button: Callable = _export_as_image
@@ -237,37 +242,37 @@ const AUTO_REFRESH_DELAY_USEC: int = 140000
 	set(value):
 		if value != planet_surface:
 			planet_surface = value
-			_update()
+			_update_visual()
 @export_range(0.0, 1.0, 0.05) var planet_surface_detail: float = 0.65:
 	set(value):
 		if value != planet_surface_detail:
 			planet_surface_detail = value
-			_update()
+			_update_visual()
 ## With this enabled, a scene can contain Classic, Rocky, Gas and Ice.
 ## Chosen by the seed and planet order, without additional RNG draws.
 @export var mixed_planet_surfaces: bool = false:
 	set(value):
 		if value != mixed_planet_surfaces:
 			mixed_planet_surfaces = value
-			_update()
+			_update_visual()
 @export_category("Nebulae")
 @export_range(0.0, 1.0, 0.05) var nebula_filaments: float = 0.0:
 	set(value):
 		if value != nebula_filaments:
 			nebula_filaments = value
-			_update()
+			_update_visual()
 ## Classic retains the previous shader. Others bias the existing fields
 ## without introducing extra FBM passes.
 @export_enum("Classic", "Wisps", "Veils", "Cloud banks", "Void pockets") var nebula_profile: int = 0:
 	set(value):
 		if value != nebula_profile:
 			nebula_profile = value
-			_update()
+			_update_visual()
 @export_range(0.0, 1.0, 0.05) var nebula_coverage: float = 0.5:
 	set(value):
 		if value != nebula_coverage:
 			nebula_coverage = value
-			_update()
+			_update_visual()
 @export var display_nebulaes: bool = true:
 	set(value):
 		if value != display_nebulaes:
@@ -325,6 +330,7 @@ func regenerate_current() -> void:
 func _regenerate(new_seed: bool) -> void:
 	if not _prepared:
 		return
+	var started: int = Time.get_ticks_usec()
 	_generating = true
 	if current_color_scheme == null or current_color_scheme.gradient == null:
 		current_color_scheme = DefaultColorScheme
@@ -350,9 +356,10 @@ func _regenerate(new_seed: bool) -> void:
 	_create_stars()
 	_create_planets()
 	_create_nebulae()
-	_apply_shader_parallax()
+	_sync_parallax_positions()
 	_has_generated = true
 	_generating = false
+	last_generation_ms = float(Time.get_ticks_usec() - started) / 1000.0
 
 
 func change_background_color(new_color: Color) -> void:
@@ -361,12 +368,24 @@ func change_background_color(new_color: Color) -> void:
 	
 	
 ## Coalesce property changes while moving Inspector sliders.
+## Geometry-affecting changes rebuild all procedural layers.
 func _update() -> void:
+	_schedule_update(false)
+
+
+## Shader, palette and presentation updates never reroll geometry or RNG.
+func _update_visual() -> void:
+	_schedule_update(true)
+
+
+func _schedule_update(visual_only: bool) -> void:
 	if not auto_regenerate or not _prepared or _generating or not is_inside_tree():
 		return
 	_last_change_usec = Time.get_ticks_usec()
 	if _update_pending:
+		_visual_only_pending = _visual_only_pending and visual_only
 		return
+	_visual_only_pending = visual_only
 	_update_pending = true
 	_update_serial += 1
 	_run_auto_update.call_deferred(_update_serial)
@@ -375,6 +394,7 @@ func _update() -> void:
 func _cancel_auto_update() -> void:
 	_update_serial += 1
 	_update_pending = false
+	_visual_only_pending = true
 
 
 func _run_auto_update(serial: int) -> void:
@@ -385,7 +405,66 @@ func _run_auto_update(serial: int) -> void:
 		await get_tree().create_timer(float(remaining) / 1000000.0).timeout
 	if serial != _update_serial or not _update_pending or not is_inside_tree():
 		return
-	regenerate_current()
+	if _visual_only_pending:
+		refresh_visuals()
+	else:
+		regenerate_current()
+
+
+## Refresh palettes, shader effects and parallax without recreating any nodes.
+## Color/resource changes can also be applied explicitly from game code.
+func refresh_visuals() -> void:
+	_cancel_auto_update()
+	if not _prepared or not _has_generated or not is_inside_tree():
+		return
+	var started: int = Time.get_ticks_usec()
+	if current_color_scheme == null or current_color_scheme.gradient == null:
+		current_color_scheme = DefaultColorScheme
+	_active_scheme = SpaceColorTheory.generate(last_seed, color_harmony, space_atmosphere, palette_color_count) if procedural_palette_enabled else current_color_scheme
+	var gradient: Texture2D = _active_scheme.gradient
+	stars_dust.material.set_shader_parameter("colorscheme", gradient)
+	stars_dust.material.set_shader_parameter("reduce_background", reduce_background)
+	nebulae.material.set_shader_parameter("colorscheme", gradient)
+	nebulae.material.set_shader_parameter("reduce_background", reduce_background)
+	nebulae.material.set_shader_parameter("filament_strength", nebula_filaments)
+	nebulae.material.set_shader_parameter("cloud_coverage", nebula_coverage)
+	nebulae.material.set_shader_parameter("nebula_profile", clampi(nebula_profile, 0, 4))
+	stars_container.show_behind_parent = show_stars_behind
+	planet_container.show_behind_parent = show_planets_behind
+	if is_instance_valid(_star_batch):
+		_star_batch.material.set_shader_parameter("colorscheme", gradient)
+		# Depth factors are stored in instance custom data; update only those.
+		var mesh: MultiMesh = _star_batch.multimesh
+		for index in mesh.instance_count:
+			var custom: Color = mesh.get_instance_custom_data(index)
+			custom.g = SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor) / 2.0
+			mesh.set_instance_custom_data(index, custom)
+	else:
+		for star in star_objects:
+			if is_instance_valid(star):
+				star.material.set_shader_parameter("colorscheme", gradient)
+	for index in planet_objects.size():
+		var planet: Node2D = planet_objects[index]
+		if is_instance_valid(planet):
+			planet.material.set_shader_parameter("colorscheme", gradient)
+			var surface: int = SpaceComposition.surface_for_planet(last_seed, index) if mixed_planet_surfaces else clampi(planet_surface, 0, 3)
+			planet.material.set_shader_parameter("surface_type", surface)
+			planet.material.set_shader_parameter("surface_detail", clampf(planet_surface_detail, 0.0, 1.0))
+	_sync_parallax_positions()
+	last_visual_refresh_ms = float(Time.get_ticks_usec() - started) / 1000.0
+
+
+## Update positions from stored, generated coordinates without drift.
+func _sync_parallax_positions() -> void:
+	var camera: Vector2 = _parallax_offset if parallax_enabled else Vector2.ZERO
+	for index in star_objects.size():
+		var star: Node2D = star_objects[index]
+		if is_instance_valid(star):
+			star.position = _star_origin[star] - camera * SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor)
+	for planet in planet_objects:
+		if is_instance_valid(planet):
+			planet.position = _planet_origin[planet] - camera * planet_parallax_factor
+	_apply_shader_parallax()
 
 
 #region Stars
@@ -727,15 +806,11 @@ func _export_as_image() -> Error:
 
 ## Updates sprite positions without regenerating the seed or shaders.
 func set_parallax_offset(camera_position: Vector2) -> void:
-	_parallax_offset = camera_position
-	_apply_shader_parallax()
-	if not parallax_enabled:
+	if camera_position == _parallax_offset:
 		return
-	for index in star_objects.size():
-		var star: Node2D = star_objects[index]
-		star.position = _star_origin[star] - camera_position * SpaceComposition.star_depth(last_seed, index, far_star_factor, near_star_factor)
-	for planet in planet_objects:
-		planet.position = _planet_origin[planet] - camera_position * planet_parallax_factor
+	_parallax_offset = camera_position
+	if _prepared:
+		_sync_parallax_positions()
 
 
 ## Full-canvas fragment shaders are scrolled by uniform, not regenerated.
